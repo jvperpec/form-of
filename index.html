@@ -1,699 +1,181 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Ordem de Fornecimento — Perpec Oilfield Supply</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 
-<!-- ===== CONFIG (invisível ao usuário — editar aqui) ===== -->
+<!-- ===== CONFIG ===== -->
 <script>
   const CONFIG = {
     WEBHOOK_URL: "",
-    CLIENTES_CSV_URL: ""
-    // CSV de clientes — separador ponto-e-vírgula, colunas nesta ordem:
-    // cnpj_nome | contribuinte_icms | consumidor_final | endereco | bairro | cidade | uf | cep
+    CLIENTES_CSV_URL: "base-clientes-26.csv",
+    FILIAIS_CSV_URL: "filiais.csv",
+    FATURAMENTO_CSV_URL: "faturamento.csv",
+    ITENS_CSV_URL: "itens.csv",
+    INSPECAO_CSV_URL: "inspecao.csv",
+    ACABAMENTO_CSV_URL: "acabamento.csv"
   };
 </script>
-
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --black:   #1a1a1a;
-    --dark:    #2a2a2a;
-    --text:    #4a4a4a;
-    --muted:   #888888;
-    --border:  #d9d9d9;
-    --bg:      #f5f5f5;
-    --white:   #ffffff;
-    --light:   #fafafa;
-    --red:     #c0392b;
-    --radius:  12px;
-    --shadow:  0 2px 8px rgba(0,0,0,0.08);
-  }
-
-  body { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-    font-size: 14px; 
-    background: var(--bg); 
-    color: var(--text); 
-    line-height: 1.6;
-  }
-
-  /* ===== HEADER ===== */
-  .page-header {
-    background: var(--white);
-    padding: 20px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 3px solid var(--red);
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-
-  .logo-area { 
-    display: flex; 
-    align-items: center; 
-    flex-shrink: 0; 
-  }
-
-  .logo-area img { 
-    height: 60px; 
-    width: auto; 
-    object-fit: contain; 
-  }
-
-  .header-title {
-    flex: 1;
-    text-align: right;
-    min-width: 250px;
-  }
-
-  .header-title h1 { 
-    font-size: 24px; 
-    font-weight: 700; 
-    color: var(--black);
-    margin-bottom: 4px;
-  }
-
-  .header-title p { 
-    font-size: 13px; 
-    color: var(--muted);
-    font-weight: 400;
-  }
-
-  /* ===== INFO BAR ===== */
-  .info-bar {
-    background: var(--black);
-    color: var(--white);
-    padding: 16px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-
-  .info-bar-left, .info-bar-center, .info-bar-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-
-  .info-bar-left { flex: 1; }
-  .info-bar-center { flex: 1; text-align: center; }
-  .info-bar-right { flex: 1; text-align: right; }
-
-  .info-label {
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #aaa;
-    font-size: 11px;
-  }
-
-  .info-value {
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--white);
-  }
-
-  .info-bar-right .info-value {
-    color: var(--red);
-  }
-
-  /* ===== CONTAINER ===== */
-  .container { 
-    max-width: 1200px; 
-    margin: 30px auto; 
-    padding: 0 20px 60px; 
-  }
-
-  /* ===== CARD ===== */
-  .card { 
-    background: var(--white); 
-    border-radius: var(--radius);
-    margin-bottom: 20px; 
-    box-shadow: var(--shadow); 
-    overflow: hidden;
-    border: 1px solid #e8e8e8;
-  }
-
-  .card-header { 
-    background: var(--black); 
-    color: white; 
-    padding: 14px 20px; 
-    font-size: 13px; 
-    font-weight: 700; 
-    letter-spacing: 1px; 
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .card-header::before {
-    content: '👤';
-    font-size: 16px;
-  }
-
-  .card-body { 
-    padding: 25px; 
-  }
-
-  /* ===== FORM ===== */
-  .row { 
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px; 
-    margin-bottom: 20px; 
-  }
-
-  .row.full { grid-template-columns: 1fr; }
-  .row.three { grid-template-columns: 1fr 1fr 1fr; }
-
-  .field { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 8px; 
-  }
-
-  .field > label { 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: var(--text);
-    text-transform: none;
-    letter-spacing: 0;
-  }
-
-  .req { 
-    color: var(--red); 
-    margin-left: 2px; 
-  }
-
-  input[type="text"], 
-  input[type="date"], 
-  input[type="number"], 
-  input[type="email"],
-  select, 
-  textarea {
-    width: 100%; 
-    padding: 12px 16px;
-    border: 1px solid var(--border); 
-    border-radius: 8px;
-    font-size: 14px; 
-    font-family: inherit; 
-    background: var(--white); 
-    color: var(--text);
-    transition: all .2s ease;
-  }
-
-  input::placeholder,
-  select {
-    color: #999;
-  }
-
-  input:focus, 
-  select:focus, 
-  textarea:focus { 
-    outline: none; 
-    border-color: var(--red); 
-    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
-  }
-
-  input[readonly] { 
-    background: var(--light); 
-    color: var(--muted); 
-    cursor: default; 
-  }
-
-  textarea { 
-    resize: vertical; 
-    min-height: 80px; 
-  }
-
-  select { 
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 20px;
-    padding-right: 40px;
-  }
-
-  /* ===== FLAGS (CHECKBOXES/RADIOS) ===== */
-  .flags { 
-    display: flex; 
-    gap: 20px; 
-    align-items: center; 
-    padding-top: 5px; 
-    flex-wrap: wrap; 
-  }
-
-  .flags label { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    cursor: pointer; 
-    font-size: 13px; 
-    color: var(--text);
-    font-weight: 500;
-  }
-
-  .flags input { 
-    width: 18px !important;
-    height: 18px;
-    cursor: pointer; 
-    accent-color: var(--red);
-  }
-
-  /* ===== DIVIDER ===== */
-  .divider { 
-    height: 1px; 
-    background: var(--border); 
-    margin: 20px 0; 
-  }
-
-  /* ===== ITEMS ===== */
-  .items-ctrl { 
-    display: flex; 
-    gap: 12px; 
-    margin-bottom: 20px; 
-    align-items: center; 
-    flex-wrap: wrap; 
-  }
-
-  .item-card { 
-    border: 1px solid var(--border); 
-    border-radius: 8px; 
-    margin-bottom: 12px; 
-    background: var(--white); 
-    overflow: hidden;
-  }
-
-  .item-card.sub { 
-    border-left: 4px solid var(--red); 
-    margin-left: 20px; 
-  }
-
-  .item-hdr { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-    padding: 12px 16px; 
-    background: var(--light); 
-    cursor: pointer; 
-    user-select: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .item-hdr:hover { 
-    background: #f0f0f0; 
-  }
-
-  .item-num { 
-    background: var(--black); 
-    color: white; 
-    width: 32px; 
-    height: 32px; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 12px; 
-    font-weight: 700; 
-    flex-shrink: 0; 
-  }
-
-  .item-card.sub .item-num { 
-    background: var(--red); 
-  }
-
-  .item-title { 
-    flex: 1; 
-    font-size: 13px; 
-    font-weight: 600;
-  }
-
-  .badge { 
-    font-size: 11px; 
-    padding: 4px 10px; 
-    border-radius: 12px; 
-    font-weight: 600; 
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
-  .badge-pai { 
-    background: #e8e8e8; 
-    color: #333; 
-  }
-
-  .badge-sub { 
-    background: #fde8e6; 
-    color: var(--red); 
-  }
-
-  .item-acts { 
-    display: flex; 
-    gap: 6px;
-  }
-
-  .item-body { 
-    padding: 20px; 
-    display: none; 
-    border-top: 1px solid var(--border);
-  }
-
-  .item-body.open { 
-    display: block; 
-  }
-
-  /* ===== BUTTONS ===== */
-  .btn { 
-    display: inline-flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 8px; 
-    padding: 10px 18px; 
-    border: none; 
-    border-radius: 6px; 
-    font-size: 13px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    transition: all .15s ease;
-    font-family: inherit; 
-    white-space: nowrap;
-  }
-
-  .btn:hover { 
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-
-  .btn:active { 
-    transform: translateY(0); 
-  }
-
-  .btn-dark { 
-    background: var(--black); 
-    color: white; 
-  }
-
-  .btn-red { 
-    background: var(--red); 
-    color: white; 
-  }
-
-  .btn-outline { 
-    background: transparent; 
-    color: var(--text); 
-    border: 1px solid var(--border);
-  }
-
-  .btn-sm { 
-    padding: 6px 12px; 
-    font-size: 12px; 
-  }
-
-  .btn-icon { 
-    padding: 6px 10px; 
-  }
-
-  /* ===== ACTIONS ===== */
-  .act-bar { 
-    background: var(--white); 
-    border: 1px solid var(--border); 
-    border-radius: 8px; 
-    padding: 20px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    flex-wrap: wrap; 
-    gap: 15px; 
-    box-shadow: var(--shadow);
-  }
-
-  .act-group { 
-    display: flex; 
-    gap: 10px; 
-    flex-wrap: wrap;
-  }
-
-  /* ===== MISC ===== */
-  .pill { 
-    display: inline-flex; 
-    align-items: center; 
-    background: #e8e8e8; 
-    color: #333; 
-    border-radius: 20px; 
-    padding: 4px 12px; 
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .cf-badge { 
-    display: none; 
-    background: #fef9c3; 
-    color: #854d0e; 
-    border: 1px solid #fde047; 
-    border-radius: 4px; 
-    padding: 3px 8px; 
-    font-size: 11px; 
-    font-weight: 700; 
-    margin-left: 6px; 
-  }
-
-  .footer { 
-    text-align: center; 
-    font-size: 12px; 
-    color: #aaa; 
-    margin-top: 40px; 
-    padding-bottom: 30px; 
-  }
-
-  /* ===== AUTOCOMPLETE ===== */
-  .ac-wrap { 
-    position: relative; 
-  }
-
-  .ac-list { 
-    position: absolute; 
-    top: 100%; 
-    left: 0; 
-    right: 0; 
-    background: white; 
-    border: 1px solid var(--border); 
-    border-top: none; 
-    border-radius: 0 0 8px 8px; 
-    max-height: 200px; 
-    overflow-y: auto; 
-    z-index: 200; 
-    box-shadow: 0 8px 16px rgba(0,0,0,0.12); 
-  }
-
-  .ac-item { 
-    padding: 10px 14px; 
-    cursor: pointer; 
-    font-size: 13px; 
-    border-bottom: 1px solid #f0f0f0;
-    transition: background .1s;
-  }
-
-  .ac-item:hover { 
-    background: #f8f8f8; 
-  }
-
-  .ac-name { 
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .ac-sub { 
-    font-size: 12px; 
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  /* ===== RESPONSIVIDADE ===== */
-  @media (max-width: 1024px) {
-    .page-header {
-      padding: 15px 30px;
-    }
-
-    .info-bar {
-      padding: 12px 30px;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .info-bar-left, .info-bar-center, .info-bar-right {
-      width: 100%;
-      text-align: left;
-    }
-
-    .info-bar-center, .info-bar-right {
-      text-align: left;
-    }
-
-    .row { grid-template-columns: 1fr; }
-    .row.three { grid-template-columns: 1fr; }
-
-    .container {
-      padding: 0 15px 40px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 15px 20px;
-      gap: 15px;
-    }
-
-    .header-title {
-      width: 100%;
-      text-align: left;
-    }
-
-    .header-title h1 {
-      font-size: 20px;
-    }
-
-    .info-bar {
-      padding: 12px 20px;
-      font-size: 12px;
-    }
-
-    .card-body {
-      padding: 18px;
-    }
-
-    .row {
-      grid-template-columns: 1fr;
-      gap: 15px;
-    }
-
-    .act-bar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .act-group {
-      justify-content: center;
-    }
-
-    .btn {
-      width: 100%;
-    }
-
-    .item-card.sub {
-      margin-left: 10px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .page-header {
-      padding: 12px 15px;
-    }
-
-    .logo-area img {
-      height: 45px;
-    }
-
-    .header-title h1 {
-      font-size: 18px;
-    }
-
-    .info-bar {
-      padding: 10px 15px;
-      font-size: 11px;
-    }
-
-    .info-label {
-      font-size: 10px;
-    }
-
-    .card-header {
-      padding: 12px 15px;
-      font-size: 12px;
-    }
-
-    .card-body {
-      padding: 15px;
-    }
-
-    .btn-sm, .btn-icon {
-      width: auto;
-    }
-
-    .item-acts {
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 8px;
-    }
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C0392B;--red2:#961c13;--dark:#1A1210;
+  --bg:#F2F1ED;--surface:#FFFFFF;--surface2:#F8F7F5;
+  --border:#E0DBD5;--border2:#C5BDB5;
+  --text:#18171A;--muted:#6A6760;
+  --accent:#C0392B;--accent-lt:#FDF0EF;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+.site-header{background:#fff;border-bottom:3px solid var(--red);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem}
+.header-logo img{height:44px;width:auto;display:block}
+.header-right{text-align:right}
+.header-right .title{font-size:15px;font-weight:700;color:var(--dark)}
+.header-right .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.doc-strip{background:var(--dark);padding:.55rem 1.5rem}
+.doc-strip-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem}
+.doc-code-label{font-size:11px;color:#A09090;letter-spacing:.05em;text-transform:uppercase;margin-right:4px}
+.doc-code-prefix{font-size:12px;font-weight:700;color:#fff;letter-spacing:.08em;margin-right:2px}
+.doc-code-val{font-family:"Courier New",monospace;font-size:14px;font-weight:700;color:#fff;letter-spacing:.1em}
+.doc-meta{font-size:11px;color:#B0A0A0}
+.doc-req{font-size:11px;color:#E09090}
+.sticky-top{position:sticky;top:0;z-index:100}
+.wrap{max-width:900px;margin:0 auto;padding:1.8rem 1rem 4rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.05);position:relative}
+.card-head{background:var(--dark);padding:.65rem 1.3rem;display:flex;align-items:center;gap:8px;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+.card-head h2{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#D4C8C4}
+.card-head svg{width:13px;height:13px;stroke:#C0392B;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.card-body{padding:1.25rem 1.3rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.full{grid-column:1/-1}
+@media(max-width:600px){.g2,.g3{grid-template-columns:1fr}.full{grid-column:1}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.req{color:var(--red);margin-left:1px}
+.field input,.field textarea,.field select{border:1px solid var(--border2);border-radius:var(--radius);padding:9px 11px;font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);transition:border-color .14s,box-shadow .14s;width:100%}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.12)}
+.field input[readonly]{background:var(--surface2);color:var(--muted);cursor:default;border-style:dashed}
+.field textarea{resize:vertical;min-height:72px}
+.field input[type=number]{-moz-appearance:textfield}
+.field input[type=number]::-webkit-outer-spin-button,.field input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236A6760' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 10px center;background-size:18px;padding-right:36px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.pill-group{display:flex;gap:7px;flex-wrap:wrap;padding-top:2px}
+.pill-radio{display:none}
+.pill-label{padding:7px 16px;border-radius:20px;font-size:12.5px;font-weight:500;border:1px solid var(--border2);cursor:pointer;background:var(--surface);color:var(--muted);transition:all .13s;user-select:none}
+.pill-radio:checked + .pill-label{background:var(--dark);border-color:var(--dark);color:#fff}
+.pill-frete-CIF:checked + .pill-label,.pill-frete-FOB:checked + .pill-label{background:var(--red);border-color:var(--red);color:#fff}
+.pill-tipo:checked + .pill-label{background:#EEF2FF;border-color:#6B82CF;color:#3D5AC0}
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:220px;overflow-y:auto;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.ac-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background .1s}
+.ac-item:hover{background:var(--accent-lt);color:var(--red)}
+.ac-name{font-weight:600;color:var(--text)}
+.ac-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.cf-badge{display:none;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:700;margin-left:6px}
+.end-toggle{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.end-toggle label{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);font-weight:500}
+.end-toggle input[type=radio]{accent-color:var(--red);width:16px;height:16px}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.item-card.sub{border-left:4px solid var(--red);margin-left:20px}
+.item-anim{animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.item-head{background:var(--dark);display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.2rem;border-radius:var(--radius-lg) var(--radius-lg) 0 0;cursor:pointer;user-select:none}
+.item-card.sub .item-head{border-radius:8px 8px 0 0}
+.item-badge{font-size:10.5px;font-weight:700;letter-spacing:.06em;background:rgba(192,57,43,.2);color:#E08070;border-radius:20px;padding:3px 10px;flex-shrink:0}
+.item-badge.sub-badge{background:rgba(192,57,43,.3);color:#ffb4a8}
+.item-title-text{flex:1;font-size:13px;font-weight:500;color:#D4C8C4;margin:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-acts{display:flex;gap:6px;flex-shrink:0}
+.btn-remove{width:26px;height:26px;border-radius:6px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9A8A85;font-size:18px;line-height:1;transition:background .13s,color .13s}
+.btn-remove:hover{background:rgba(192,57,43,.2);color:var(--red)}
+.btn-add-sub{padding:4px 10px;border-radius:6px;background:rgba(192,57,43,.15);border:none;cursor:pointer;color:#E08070;font-size:11px;font-weight:700;font-family:inherit;transition:background .13s}
+.btn-add-sub:hover{background:rgba(192,57,43,.3);color:#fff}
+.item-body{padding:1.2rem 1.3rem;display:none;flex-direction:column;gap:13px;border-top:1px solid var(--border)}
+.item-body.open{display:flex}
+.um-other{display:none;margin-top:6px}
+.um-other.show{display:block}
+.btn-add-item{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px dashed var(--border2);background:none;border-radius:var(--radius-lg);padding:12px;font-size:13.5px;font-family:inherit;cursor:pointer;color:var(--red);font-weight:600;transition:background .13s,border-color .13s;margin-bottom:1rem}
+.btn-add-item:hover{background:var(--accent-lt);border-color:var(--red)}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--muted);font-size:13px;border:1.5px dashed var(--border2);border-radius:var(--radius-lg);margin-bottom:10px}
+.act-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.act-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;transition:all .13s;font-family:inherit;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.btn:active{transform:translateY(0)}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-dark:hover{background:#2D1F1A}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:var(--red2)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.btn-outline:hover{background:var(--surface2);border-color:#9A9087}
+.btn:disabled{background:var(--border2) !important;cursor:not-allowed;color:var(--muted);transform:none !important;box-shadow:none !important}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--dark);color:#fff;border-radius:var(--radius-lg);padding:12px 20px;font-size:13.5px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .2s,transform .2s;z-index:99999;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:#155724}
+.toast.error{background:var(--red)}
+.count-pill{display:inline-flex;align-items:center;background:rgba(192,57,43,.15);color:#E08070;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:.04em;margin-left:auto}
+.page-footer{text-align:center;font-size:12px;color:#aaa;margin-top:32px;padding-bottom:24px}
+@media(max-width:768px){.act-bar{flex-direction:column;align-items:stretch}.act-group{justify-content:stretch}.btn{width:100%}.item-card.sub{margin-left:8px}}
+@media(max-width:480px){.header-logo img{height:36px}.card-body{padding:1rem}.item-body{padding:1rem}}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="page-header">
-  <div class="logo-area">
-    <img src="PERPEC - LOGO PRINCIPAL.png" alt="Perpec Oilfield Supply">
-  </div>
-  <div class="header-title">
-    <h1>Ordem de Fornecimento</h1>
-    <p>Formulário interno — uso exclusivo colaboradores</p>
-  </div>
-</div>
-
-<!-- INFO BAR -->
-<div class="info-bar">
-  <div class="info-bar-left">
-    <div>
-      <div class="info-label">Código</div>
-      <div class="info-value" id="hdrCode">FP-COM-0001</div>
+<div class="sticky-top">
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <img src="PERPEC - LOGO PRINCIPAL.png" alt="Perpec Oilfield Supply"/>
+    </div>
+    <div class="header-right">
+      <div class="title">Ordem de Fornecimento</div>
+      <div class="sub">Formulário interno — uso exclusivo colaboradores</div>
     </div>
   </div>
-  <div class="info-bar-center">
-    <div id="infoCenter" style="font-size: 13px;">FP-COM-0001 | Rev. 0 | 13/04/2026</div>
-  </div>
-  <div class="info-bar-right">
+</header>
+
+<div class="doc-strip">
+  <div class="doc-strip-inner">
     <div>
-      <span class="info-label">* Campos obrigatórios</span>
+      <span class="doc-code-label">Código</span>
+      <span class="doc-code-prefix">OF</span>
+      <span class="doc-code-val" id="hdrCodeVal">—</span>
     </div>
+    <span class="doc-meta">FP-COM-0001 &nbsp;|&nbsp; <span id="stripInfo">—</span></span>
+    <span class="doc-req">* Campos obrigatórios</span>
   </div>
 </div>
+</div>
 
-<div class="container">
+<main class="wrap">
 
   <!-- IDENTIFICAÇÃO DO DOCUMENTO -->
   <div class="card">
-    <div class="card-header">Identificação do Documento</div>
+    <div class="card-head">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+      <h2>Identificação do Documento</h2>
+    </div>
     <div class="card-body">
-      <div class="row">
+      <div class="g2" style="margin-bottom:13px">
         <div class="field">
           <label>Código do Documento <span class="req">*</span></label>
           <input type="text" id="codDoc" placeholder="Ex: OF-001" oninput="updHdr()">
         </div>
         <div class="field">
           <label>Revisão <span class="req">*</span></label>
-          <input type="text" id="revisao" placeholder="Ex: Rev. 00">
+          <input type="text" id="revisao" placeholder="Ex: Rev. 00" oninput="updHdr()">
         </div>
       </div>
-      <div class="row">
+      <div class="g2">
         <div class="field">
           <label>Data de Emissão <span class="req">*</span></label>
-          <input type="date" id="dataEmissao">
+          <input type="date" id="dataEmissao" oninput="updHdr()">
         </div>
         <div class="field">
           <label>Histórico de Alterações <span class="req">*</span></label>
@@ -705,21 +187,22 @@
 
   <!-- IDENTIFICAÇÃO DA VENDA -->
   <div class="card">
-    <div class="card-header">Identificação da Venda</div>
+    <div class="card-head">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <h2>Identificação da Venda</h2>
+    </div>
     <div class="card-body">
-      <div class="row full">
-        <div class="field">
-          <label>Cliente (CNPJ + Nome Fantasia) <span class="req">*</span></label>
-          <div class="ac-wrap">
-            <div style="display:flex;align-items:stretch">
-              <input type="text" id="clienteInput" placeholder="Digite CNPJ ou nome para filtrar..." oninput="searchCliente()" autocomplete="off" style="flex:1;border-radius:8px 0 0 8px;border-right:none">
-              <span class="cf-badge" id="cfBadge" style="border-radius:0 8px 8px 0;border-left:none;display:none">CF</span>
-            </div>
-            <div id="acBox"></div>
+      <div class="field" style="margin-bottom:13px">
+        <label>Cliente (CNPJ + Nome Fantasia) <span class="req">*</span></label>
+        <div class="ac-wrap">
+          <div style="display:flex;align-items:stretch">
+            <input type="text" id="clienteInput" placeholder="Digite CNPJ ou nome para filtrar..." oninput="searchCliente()" autocomplete="off" style="flex:1;border-radius:8px 0 0 8px;border-right:none">
+            <span class="cf-badge" id="cfBadge" style="border-radius:0 8px 8px 0;border-left:none;display:none;align-items:center">CF</span>
           </div>
+          <div id="acBox"></div>
         </div>
       </div>
-      <div class="row">
+      <div class="g2" style="margin-bottom:13px">
         <div class="field">
           <label>Contribuinte ICMS <span class="req">*</span></label>
           <input type="text" id="icms" readonly placeholder="Preenchido pelo cadastro">
@@ -730,7 +213,7 @@
         </div>
       </div>
       <div class="divider"></div>
-      <div class="row">
+      <div class="g2" style="margin-bottom:13px">
         <div class="field">
           <label>Contrato / Pedido (cliente)</label>
           <input type="text" id="contrato" placeholder="Nº do contrato...">
@@ -740,193 +223,171 @@
           <input type="text" id="omie" placeholder="Nº Omie...">
         </div>
       </div>
-      <div class="row">
+      <div class="g2" style="margin-bottom:13px">
         <div class="field">
           <label>Proposta</label>
           <input type="text" id="proposta" placeholder="Nº da proposta...">
         </div>
         <div class="field">
           <label>Filial</label>
-          <select id="filial">
-            <option>Matriz</option>
-            <option>Filial 2</option>
-            <option>Filial 3</option>
-          </select>
+          <select id="filial"><option value="">Carregando...</option></select>
         </div>
       </div>
-      <div class="row full">
-        <div class="field">
-          <label>Observações da Venda</label>
-          <textarea id="obsVenda" placeholder="Observações comerciais relevantes..."></textarea>
-        </div>
+      <div class="field">
+        <label>Observações da Venda</label>
+        <textarea id="obsVenda" placeholder="Observações comerciais relevantes..."></textarea>
       </div>
     </div>
   </div>
 
   <!-- IDENTIFICAÇÃO LOGÍSTICA -->
   <div class="card">
-    <div class="card-header">Identificação Logística</div>
+    <div class="card-head">
+      <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      <h2>Identificação Logística</h2>
+    </div>
     <div class="card-body">
-      <div class="row">
+      <div class="g2" style="margin-bottom:13px">
         <div class="field">
-          <label>Prazo de Entrega <span class="req">*</span></label>
-          <input type="text" id="prazo" placeholder="Ex: 30 dias úteis">
+          <label>Data de Entrega <span class="req">*</span></label>
+          <input type="date" id="prazo">
         </div>
         <div class="field">
           <label>Tipo de Frete <span class="req">*</span></label>
-          <div class="flags">
-            <label><input type="radio" name="frete" value="CIF"> CIF</label>
-            <label><input type="radio" name="frete" value="FOB"> FOB</label>
-            <label><input type="radio" name="frete" value="Retira"> Retira</label>
+          <div class="pill-group">
+            <input type="radio" class="pill-radio pill-frete-CIF" name="frete" id="fCIF" value="CIF">
+            <label class="pill-label" for="fCIF">CIF</label>
+            <input type="radio" class="pill-radio pill-frete-FOB" name="frete" id="fFOB" value="FOB">
+            <label class="pill-label" for="fFOB">FOB</label>
           </div>
         </div>
       </div>
       <div class="divider"></div>
-      <div class="row full">
-        <div class="field">
-          <label>Endereço de Entrega <span class="req">*</span></label>
-          <div class="flags" style="margin-bottom:12px">
-            <label><input type="radio" name="endType" id="cadEnd" checked onchange="toggleEnd()"> Usar endereço do cadastro</label>
-            <label><input type="radio" name="endType" id="outroEnd" onchange="toggleEnd()"> Outro endereço</label>
+      <div class="field">
+        <label>Endereço de Entrega <span class="req">*</span></label>
+        <div class="end-toggle">
+          <label><input type="radio" name="endType" id="cadEnd" checked onchange="toggleEnd()"> Usar endereço do cadastro</label>
+          <label><input type="radio" name="endType" id="outroEnd" onchange="toggleEnd()"> Outro endereço</label>
+        </div>
+        <div id="endAuto">
+          <div class="g2" style="margin-bottom:10px">
+            <div class="field"><label>UF</label><input type="text" id="aUF" readonly></div>
+            <div class="field"><label>Cidade</label><input type="text" id="aCidade" readonly></div>
           </div>
-          
-          <!-- Endereço do Cadastro (Readonly) -->
-          <div id="endAuto">
-            <div class="row">
-              <div class="field"><label>UF</label><input type="text" id="aUF" readonly></div>
-              <div class="field"><label>Cidade</label><input type="text" id="aCidade" readonly></div>
-            </div>
-            <div class="row full">
-              <div class="field"><label>Logradouro / Bairro</label><input type="text" id="aEnd" readonly></div>
-            </div>
+          <div class="field"><label>Logradouro / Bairro</label><input type="text" id="aEnd" readonly></div>
+        </div>
+        <div id="endManual" style="display:none">
+          <div class="g2" style="margin-bottom:10px">
+            <div class="field"><label>UF</label><input type="text" id="mUF" placeholder="UF"></div>
+            <div class="field"><label>Cidade</label><input type="text" id="mCidade" placeholder="Cidade"></div>
           </div>
-          
-          <!-- Outro Endereço (Editável) -->
-          <div id="endManual" style="display:none">
-            <div class="row">
-              <div class="field"><label>UF</label><input type="text" id="mUF" placeholder="UF"></div>
-              <div class="field"><label>Cidade</label><input type="text" id="mCidade" placeholder="Cidade"></div>
-            </div>
-            <div class="row full">
-              <div class="field"><label>Logradouro / Bairro</label><input type="text" id="mEnd" placeholder="Rua, nº, Bairro..."></div>
-            </div>
-          </div>
+          <div class="field"><label>Logradouro / Bairro</label><input type="text" id="mEnd" placeholder="Rua, nº, Bairro..."></div>
         </div>
       </div>
-      <div class="row full">
-        <div class="field">
-          <label>Observações de Logística</label>
-          <textarea id="obsLog" placeholder="Instruções de entrega, horários, contatos..."></textarea>
-        </div>
+      <div class="field" style="margin-top:13px">
+        <label>Observações de Logística</label>
+        <textarea id="obsLog" placeholder="Instruções de entrega, horários, contatos..."></textarea>
       </div>
     </div>
   </div>
 
   <!-- ITENS -->
   <div class="card">
-    <div class="card-header">Identificação dos Itens</div>
-    <div class="card-body">
-      <div class="items-ctrl">
-        <button class="btn btn-dark" onclick="addItem()">+ Adicionar Item Pai</button>
-        <span class="pill" id="itemCount">0 itens</span>
+    <div class="card-head">
+      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <h2>Identificação dos Itens</h2>
+      <span class="count-pill" id="itemCount">0 itens</span>
+    </div>
+    <div class="card-body" style="padding-bottom:.8rem">
+      <div id="itemsBox"></div>
+      <div class="empty-state" id="noItems">
+        <div style="font-size:28px;margin-bottom:6px">📦</div>
+        Nenhum item adicionado. Clique em "Adicionar Item" abaixo.
       </div>
-      
-      <div id="itemsBox">
-        <!-- Itens injetados via JS -->
-      </div>
-      
-      <div id="noItems" style="text-align:center;padding:40px;color:#aaa;border:1px dashed var(--border);border-radius:8px">
-        Nenhum item adicionado. Clique no botão acima para começar.
-      </div>
+      <button class="btn-add-item" onclick="addItem()">
+        <span style="font-size:20px;line-height:1">+</span> Adicionar Item Pai
+      </button>
     </div>
   </div>
 
   <!-- OBSERVAÇÕES GERAIS -->
   <div class="card">
-    <div class="card-header">Observações Gerais</div>
+    <div class="card-head">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <h2>Observações Gerais</h2>
+    </div>
     <div class="card-body">
-      <textarea id="obsGerais" placeholder="Observações adicionais que constarão no documento..."></textarea>
+      <div class="field">
+        <textarea id="obsGerais" placeholder="Observações adicionais que constarão no documento..."></textarea>
+      </div>
     </div>
   </div>
 
-  <!-- AÇÕES -->
+  <!-- ACTION BAR -->
   <div class="act-bar">
     <div class="act-group">
       <button class="btn btn-outline" onclick="limpar()">Limpar Tudo</button>
     </div>
     <div class="act-group">
-      <button class="btn btn-outline" onclick="gerarPDF()">Gerar PDF</button>
-      <button class="btn btn-outline" onclick="gerarDOCX()">Gerar Word</button>
-      <button class="btn btn-red" id="btnEnviar" onclick="enviar()">Enviar para Make / Monday</button>
+      <button class="btn btn-outline" onclick="gerarPDF()">⬇ Gerar PDF</button>
+      <button class="btn btn-dark" onclick="gerarDOCX()">⬇ Gerar Word</button>
+      <button class="btn btn-red" id="btnEnviar" onclick="enviar()">Enviar para Make / Monday →</button>
     </div>
   </div>
 
-  <div class="footer">
-    Perpec Oilfield Supply — Sistema de Geração de Ordem de Fornecimento
-  </div>
+  <div class="page-footer">Perpec Oilfield Supply — Sistema de Geração de Ordem de Fornecimento</div>
+</main>
 
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-// ================================================================
-// DATA & STATE
-// ================================================================
-let items = [];
-let idCtr = 0;
-let selCliente = null;
-let clientesData = [];
+let items = [], idCtr = 0, selCliente = null, clientesData = [], itensData = [];
+let UM_OPTS   = ['un.','m','kg','h','outro'];
+let ACAB_OPTS = ['Bruto','Zincado','Pintado','Inox','Outro'];
+let FAT_OPTS  = ['','Venda Direta','Entrega Futura','Remessa p/ Industrialização','Outros'];
+let INSP_OPTS = ['','Visual','Dimensional','LP','PM','Ultrassom','Radiografia','Hidrostático','Outros'];
 
-const UM_OPTS   = ['PÇ', 'JG', 'RL', 'MT', 'outro'];
-const ACAB_OPTS = ['Bruto', 'Zincado', 'Pintado', 'Inox', 'Outro'];
-const FAT_OPTS  = ['', 'Venda Direta', 'Entrega Futura', 'Remessa p/ Industrialização', 'Outros'];
-const INSP_OPTS = ['', 'Visual', 'Dimensional', 'LP', 'PM', 'Ultrassom', 'Radiografia', 'Hidrostático', 'Outros'];
-
-// Init
 window.onload = () => {
   document.getElementById('dataEmissao').value = new Date().toISOString().slice(0,10);
-  loadClientes();
+  updHdr(); loadClientes(); loadFiliais(); loadFaturamento(); loadItens(); loadInspecao(); loadAcabamento();
 };
 
-// ================================================================
-// CLIENTES (CSV)
-// ================================================================
+function updHdr() {
+  const cod = document.getElementById('codDoc').value;
+  const rev = document.getElementById('revisao').value;
+  const dat = document.getElementById('dataEmissao').value;
+  document.getElementById('hdrCodeVal').textContent = cod || '—';
+  const p = []; if(rev) p.push('Rev. '+rev); if(dat) p.push(dat);
+  document.getElementById('stripInfo').textContent = p.join(' | ') || '—';
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast'+(type?' '+type:'');
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500);
+}
+
 async function loadClientes() {
-  const url = CONFIG.CLIENTES_CSV_URL;
-  if (!url) return;
+  if (!CONFIG.CLIENTES_CSV_URL) return;
   try {
-    const r = await fetch(url);
-    const txt = await r.text();
-    const lines = txt.split('\n').filter(l => l.trim());
-    clientesData = lines.map(l => {
+    const txt = await (await fetch(CONFIG.CLIENTES_CSV_URL)).text();
+    clientesData = txt.split('\n').filter(l=>l.trim()).map(l => {
       const c = l.split(';');
-      return {
-        cnpj_nome: (c[0]||'').trim(),
-        icms:      (c[1]||'').trim(),
-        cf:        (c[2]||'').trim(),
-        end:       (c[3]||'').trim(),
-        bairro:    (c[4]||'').trim(),
-        cidade:    (c[5]||'').trim(),
-        uf:        (c[6]||'').trim(),
-        cep:       (c[7]||'').trim()
-      };
+      return { cnpj_nome:(c[0]||'').trim(), icms:(c[1]||'').trim(), cf:(c[2]||'').trim(),
+               end:(c[3]||'').trim(), bairro:(c[4]||'').trim(), cidade:(c[5]||'').trim(), uf:(c[6]||'').trim(), cep:(c[7]||'').trim() };
     });
-  } catch(e) { console.error('Erro ao carregar clientes:', e); }
+  } catch(e) {}
 }
 
 function searchCliente() {
   const val = document.getElementById('clienteInput').value.toLowerCase();
   const box = document.getElementById('acBox');
   if (!val || val.length < 2) { box.innerHTML = ''; return; }
-  
   const res = clientesData.filter(c => c.cnpj_nome.toLowerCase().includes(val)).slice(0,8);
   if (!res.length) { box.innerHTML = ''; return; }
-
-  box.innerHTML = `<div class="ac-list">${res.map((c,i) => `
-    <div class="ac-item" onclick="selectCliente(${clientesData.indexOf(c)})">
-      <div class="ac-name">${c.cnpj_nome}</div>
-      <div class="ac-sub">${c.cidade}/${c.uf}</div>
-    </div>
-  `).join('')}</div>`;
+  box.innerHTML = '<div class="ac-list">'+res.map(c =>
+    '<div class="ac-item" onclick="selectCliente('+clientesData.indexOf(c)+')"><div class="ac-name">'+c.cnpj_nome+'</div><div class="ac-sub">'+c.cidade+'/'+c.uf+'</div></div>'
+  ).join('')+'</div>';
 }
 
 function selectCliente(idx) {
@@ -935,557 +396,739 @@ function selectCliente(idx) {
   document.getElementById('clienteInput').value = c.cnpj_nome;
   document.getElementById('icms').value = c.icms;
   document.getElementById('consF').value = c.cf;
-  document.getElementById('cfBadge').style.display = (c.cf||'').toUpperCase() === 'SIM' ? 'inline-block' : 'none';
-  
+  const badge = document.getElementById('cfBadge');
+  badge.style.display = (c.cf||'').toUpperCase() === 'SIM' ? 'inline-flex' : 'none';
   document.getElementById('aUF').value = c.uf;
   document.getElementById('aCidade').value = c.cidade;
-  document.getElementById('aEnd').value = `${c.end}${c.bairro ? ', ' + c.bairro : ''}`;
-  
+  document.getElementById('aEnd').value = c.end + (c.bairro ? ', '+c.bairro : '');
   document.getElementById('acBox').innerHTML = '';
 }
 
 function toggleEnd() {
-  const manual = document.getElementById('outroEnd').checked;
-  document.getElementById('endAuto').style.display = manual ? 'none' : 'block';
-  document.getElementById('endManual').style.display = manual ? 'block' : 'none';
+  const m = document.getElementById('outroEnd').checked;
+  document.getElementById('endAuto').style.display = m ? 'none' : 'block';
+  document.getElementById('endManual').style.display = m ? 'block' : 'none';
 }
 
-function updHdr() {
-  const cod = document.getElementById('codDoc').value;
-  document.getElementById('hdrCode').textContent = cod || 'FP-COM-0001';
+async function loadFiliais() {
+  const sel = document.getElementById('filial');
+  const fb = ['Matriz','Filial 1','Filial 2','Filial 3'];
+  if (!CONFIG.FILIAIS_CSV_URL) { sel.innerHTML = fb.map(f=>'<option value="'+f+'">'+f+'</option>').join(''); return; }
+  try {
+    const txt = await (await fetch(CONFIG.FILIAIS_CSV_URL)).text();
+    const opts = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+    sel.innerHTML = opts.map(f=>'<option value="'+f+'">'+f+'</option>').join('');
+  } catch(e) { sel.innerHTML = fb.map(f=>'<option value="'+f+'">'+f+'</option>').join(''); }
 }
 
-// ================================================================
-// ITEMS LOGIC
-// ================================================================
+async function loadFaturamento() {
+  if (!CONFIG.FATURAMENTO_CSV_URL) return;
+  try { const txt = await (await fetch(CONFIG.FATURAMENTO_CSV_URL)).text(); FAT_OPTS = ['',...txt.split('\n').map(l=>l.trim()).filter(Boolean)]; } catch(e) {}
+}
+
+async function loadItens() {
+  if (!CONFIG.ITENS_CSV_URL) return;
+  try {
+    const txt = await (await fetch(CONFIG.ITENS_CSV_URL)).text();
+    itensData = txt.split('\n').filter(l=>l.trim()).map(l => {
+      const p=l.split(';'); const cod=(p[0]||'').trim(), desc=(p[1]||'').trim();
+      return { cod, desc, label: cod&&desc ? cod+' — '+desc : cod||desc };
+    }).filter(i=>i.label);
+  } catch(e) {}
+}
+
+async function loadInspecao() {
+  if (!CONFIG.INSPECAO_CSV_URL) return;
+  try { const txt = await (await fetch(CONFIG.INSPECAO_CSV_URL)).text(); INSP_OPTS = ['',...txt.split('\n').map(l=>l.trim()).filter(Boolean)]; } catch(e) {}
+}
+
+async function loadAcabamento() {
+  if (!CONFIG.ACABAMENTO_CSV_URL) return;
+  try { const txt = await (await fetch(CONFIG.ACABAMENTO_CSV_URL)).text(); ACAB_OPTS = txt.split('\n').map(l=>l.trim()).filter(Boolean); } catch(e) {}
+}
+
+function searchItem(id) {
+  const inp = document.getElementById('itemInput_'+id);
+  const box = document.getElementById('itemAcBox_'+id);
+  if (!inp||!box) return;
+  const val = inp.value.toLowerCase();
+  if (!val||val.length<2||!itensData.length) { box.innerHTML=''; return; }
+  const res = itensData.filter(i=>i.label.toLowerCase().includes(val)).slice(0,8);
+  if (!res.length) { box.innerHTML=''; return; }
+  box.innerHTML = '<div class="ac-list">'+res.map(i =>
+    '<div class="ac-item" onclick="selectItem('+id+',\''+esc(i.label.replace(/'/g,"\\'"))+'\')"><div class="ac-name">'+esc(i.label)+'</div></div>'
+  ).join('')+'</div>';
+}
+
+function selectItem(id, label) {
+  const inp=document.getElementById('itemInput_'+id), box=document.getElementById('itemAcBox_'+id);
+  if(inp) inp.value=label; if(box) box.innerHTML='';
+  setF(id,'itemCodDesc',label); refreshTtl(id);
+}
+
 function addItem() {
   idCtr++;
-  items.push({ id: idCtr, pid: null, data: { tipo:'Venda', fat:'', itemCodDesc:'', descTec:'', qtd:'', um:'PÇ', umOutro:'', insp:'', acab:'Bruto', acabOutro:'', obs:'' } });
-  renderItems();
-  togBody(idCtr);
+  items.push({id:idCtr,pid:null,data:{tipo:'Venda',fat:'',itemCodDesc:'',descTec:'',qtd:'',um:'un.',umOutro:'',insp:'',acab:'Bruto',acabOutro:'',obs:''}});
+  renderItems(); togBody(idCtr);
 }
 
 function addSubOf(pid) {
   idCtr++;
-  items.push({ id: idCtr, pid: pid, data: { tipo:'Venda', fat:'', itemCodDesc:'', descTec:'', qtd:'', um:'PÇ', umOutro:'', insp:'', acab:'Bruto', acabOutro:'', obs:'' } });
-  renderItems();
-  togBody(idCtr);
+  items.push({id:idCtr,pid,data:{tipo:'Venda',fat:'',itemCodDesc:'',descTec:'',qtd:'',um:'un.',umOutro:'',insp:'',acab:'Bruto',acabOutro:'',obs:''}});
+  renderItems(); togBody(idCtr);
 }
 
 function removeItem(id) {
   if (!confirm('Remover este item? (Subitens também serão removidos)')) return;
-  items = items.filter(i => i.id !== id && i.pid !== id);
-  renderItems();
+  items = items.filter(i=>i.id!==id&&i.pid!==id); renderItems();
 }
 
-function togBody(id) {
-  const el = document.getElementById(`ib_${id}`);
-  if (el) el.classList.toggle('open');
-}
+function togBody(id) { const el=document.getElementById('ib_'+id); if(el) el.classList.toggle('open'); }
 
 function numOf(item) {
-  const tops = items.filter(i => !i.pid);
-  const pIdx = tops.indexOf(item);
-  if (pIdx !== -1) return (pIdx + 1).toString();
-  
-  const parent = items.find(i => i.id === item.pid);
-  const pNum   = numOf(parent);
-  const subs   = items.filter(i => i.pid === item.pid);
-  const sIdx   = subs.indexOf(item);
-  return `${pNum}.${sIdx + 1}`;
+  const tops=items.filter(i=>!i.pid), pIdx=tops.indexOf(item);
+  if(pIdx!==-1) return (pIdx+1).toString();
+  const parent=items.find(i=>i.id===item.pid), pNum=numOf(parent);
+  const subs=items.filter(i=>i.pid===item.pid);
+  return pNum+'.'+( subs.indexOf(item)+1 );
 }
 
-function lastTop() { return items.some(i => !i.pid); }
+function lastTop() { return items.some(i=>!i.pid); }
 
 function renderItems() {
-  const box = document.getElementById('itemsBox');
-  const noEl = document.getElementById('noItems');
-  const cnt = document.getElementById('itemCount');
-  const btnSub = document.getElementById('btnEnviar');
-
-  if (!items.length) {
-    box.innerHTML = ''; noEl.style.display = '';
-    btnSub.disabled = true; cnt.textContent = '0 itens'; return;
-  }
-  noEl.style.display = 'none';
-  btnSub.disabled = !lastTop();
-  cnt.textContent = `${items.length} ${items.length===1?'item':'itens'}`;
-
-  const tops = items.filter(i => !i.pid);
-  let html = '';
-  tops.forEach(p => {
-    html += renderCard(p);
-    items.filter(i => i.pid === p.id).forEach(s => { html += renderCard(s); });
-  });
-  box.innerHTML = html;
+  const box=document.getElementById('itemsBox'), noEl=document.getElementById('noItems');
+  const cnt=document.getElementById('itemCount'), btn=document.getElementById('btnEnviar');
+  if (!items.length) { box.innerHTML=''; noEl.style.display=''; btn.disabled=true; cnt.textContent='0 itens'; return; }
+  noEl.style.display='none'; btn.disabled=!lastTop();
+  cnt.textContent=items.length+' '+(items.length===1?'item':'itens');
+  let html='';
+  items.filter(i=>!i.pid).forEach(p => { html+=renderCard(p); items.filter(i=>i.pid===p.id).forEach(s=>{html+=renderCard(s);}); });
+  box.innerHTML=html;
 }
 
 function renderCard(item) {
-  const num  = numOf(item);
-  const isSub = !!item.pid;
-  const d    = item.data;
-  const preview = d.itemCodDesc
-    ? `${num} — ${d.itemCodDesc.slice(0,55)}${d.itemCodDesc.length>55?'…':''}`
-    : `Item ${num}`;
+  const num=numOf(item), isSub=!!item.pid, d=item.data;
+  const preview = d.itemCodDesc ? num+' — '+d.itemCodDesc.slice(0,55)+(d.itemCodDesc.length>55?'…':'') : 'Item '+num;
 
-  // UM radios
-  const umR = UM_OPTS.map(u =>
-    `<label><input type="radio" name="um_${item.id}" value="${u}" ${d.um===u?'checked':''} onchange="setF(${item.id},'um','${u}');togUmO(${item.id})"> ${u}</label>`
-  ).join('');
-  const umOs = d.um === 'outro' ? '' : 'display:none';
+  const umPills = UM_OPTS.map(u => {
+    const uid='um_'+item.id+'_'+u.replace(/\./g,'');
+    return '<input type="radio" class="pill-radio" name="um_'+item.id+'" id="'+uid+'" value="'+u+'" '+(d.um===u?'checked':'')+' onchange="setF('+item.id+',\'um\',\''+u+'\');togUmO('+item.id+')">'
+          +'<label class="pill-label" for="'+uid+'">'+u+'</label>';
+  }).join('');
 
-  // Acabamento radios
-  const acR = ACAB_OPTS.map(o =>
-    `<label><input type="radio" name="acab_${item.id}" value="${o}" ${d.acab===o?'checked':''} onchange="setF(${item.id},'acab','${o}');togAcO(${item.id})"> ${o}</label>`
-  ).join('');
-  const acOs = d.acab === 'Outro' ? '' : 'display:none';
+  const tipoPills = ['Venda','Serviço'].map(t => {
+    const tid='tipo_'+item.id+'_'+t;
+    return '<input type="radio" class="pill-radio pill-tipo" name="tipo_'+item.id+'" id="'+tid+'" value="'+t+'" '+(d.tipo===t?'checked':'')+' onchange="setF('+item.id+',\'tipo\',\''+t+'\')">'+
+           '<label class="pill-label" for="'+tid+'">'+t+'</label>';
+  }).join('');
 
-  // Fat select
-  const fatOpts = FAT_OPTS.map(f =>
-    `<option value="${f}" ${d.fat===f?'selected':''}>${f||'Selecione...'}</option>`
-  ).join('');
+  const acabOpts = ACAB_OPTS.map(o=>'<option value="'+o+'" '+(d.acab===o?'selected':'')+'>'+o+'</option>').join('');
+  const fatOpts  = FAT_OPTS.map(f=>'<option value="'+f+'" '+(d.fat===f?'selected':'')+'>'+(f||'Selecione...')+'</option>').join('');
+  const inspOpts = INSP_OPTS.map(v=>'<option value="'+v+'" '+(d.insp===v?'selected':'')+'>'+(v||'Selecione...')+'</option>').join('');
 
-  // Insp select
-  const inspOpts = INSP_OPTS.map(v =>
-    `<option value="${v}" ${d.insp===v?'selected':''}>${v||'Selecione...'}</option>`
-  ).join('');
-
-  return `
-<div class="item-card${isSub?' sub':''}" id="ic_${item.id}">
-  <div class="item-hdr" onclick="togBody(${item.id})">
-    <div class="item-num">${num}</div>
-    <div class="item-title">${esc(preview)}</div>
-    <span class="badge ${isSub?'badge-sub':'badge-pai'}">${isSub?`Sub de ${numOf(items.find(i=>i.id===item.pid))}`:'Item Pai'}</span>
-    <div class="item-acts" onclick="event.stopPropagation()">
-      ${!isSub?`<button class="btn btn-red btn-sm btn-icon" title="Adicionar subitem" onclick="addSubOf(${item.id})">+sub</button>`:''}
-      <button class="btn btn-outline btn-sm btn-icon" title="Remover" onclick="removeItem(${item.id})">✕</button>
-    </div>
-  </div>
-  <div class="item-body" id="ib_${item.id}">
-
-    <div class="row">
-      <div class="field">
-        <label>Tipo <span class="req">*</span></label>
-        <div class="flags">
-          <label><input type="radio" name="tipo_${item.id}" value="Venda"   ${d.tipo==='Venda'?'checked':''} onchange="setF(${item.id},'tipo','Venda')">   Venda</label>
-          <label><input type="radio" name="tipo_${item.id}" value="Serviço" ${d.tipo==='Serviço'?'checked':''} onchange="setF(${item.id},'tipo','Serviço')"> Serviço</label>
-        </div>
-      </div>
-      <div class="field">
-        <label>Tipo de Faturamento</label>
-        <select onchange="setF(${item.id},'fat',this.value)">${fatOpts}</select>
-      </div>
-    </div>
-
-    <div class="row full">
-      <div class="field">
-        <label>Item (Código + Descrição) <span class="req">*</span></label>
-        <input type="text" value="${esc(d.itemCodDesc)}" placeholder="Ex: COD-001 — Válvula de esfera 2&quot; API 6A" oninput="setF(${item.id},'itemCodDesc',this.value);refreshTtl(${item.id})">
-      </div>
-    </div>
-
-    <div class="row full">
-      <div class="field">
-        <label>Descrição Técnica / Científica do Item</label>
-        <textarea rows="2" placeholder="Descrição técnica detalhada, normas, materiais..." oninput="setF(${item.id},'descTec',this.value)">${esc(d.descTec)}</textarea>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>Quantidade <span class="req">*</span></label>
-        <input type="number" value="${esc(d.qtd)}" min="0" step="any" oninput="setF(${item.id},'qtd',this.value)">
-      </div>
-      <div class="field">
-        <label>UM <span class="req">*</span></label>
-        <div class="flags">${umR}</div>
-        <input type="text" id="umO_${item.id}" value="${esc(d.umOutro)}" placeholder="Especificar unidade..." style="${umOs};margin-top:8px" oninput="setF(${item.id},'umOutro',this.value)">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>Classe de Inspeção</label>
-        <select onchange="setF(${item.id},'insp',this.value)">${inspOpts}</select>
-      </div>
-      <div class="field">
-        <label>Acabamento Superficial</label>
-        <div class="flags">${acR}</div>
-        <input type="text" id="acO_${item.id}" value="${esc(d.acabOutro)}" placeholder="Especificar acabamento..." style="${acOs};margin-top:8px" oninput="setF(${item.id},'acabOutro',this.value)">
-      </div>
-    </div>
-
-    <div class="row full">
-      <div class="field">
-        <label>Observações do Item</label>
-        <textarea rows="2" placeholder="Observações específicas deste item..." oninput="setF(${item.id},'obs',this.value)">${esc(d.obs)}</textarea>
-      </div>
-    </div>
-
-  </div>
-</div>`;
+  return '<div class="item-card'+(isSub?' sub':'')+' item-anim" id="ic_'+item.id+'">'
+    +'<div class="item-head" onclick="togBody('+item.id+')">'
+    +'<span class="item-badge'+(isSub?' sub-badge':'')+'">'+( isSub ? 'SUB '+num : 'ITEM '+num )+'</span>'
+    +'<span class="item-title-text" id="ttl_'+item.id+'">'+esc(preview)+'</span>'
+    +'<div class="item-acts" onclick="event.stopPropagation()">'
+    +(!isSub?'<button class="btn-add-sub" onclick="addSubOf('+item.id+')">+sub</button>':'')
+    +'<button class="btn-remove" onclick="removeItem('+item.id+')">×</button>'
+    +'</div></div>'
+    +'<div class="item-body" id="ib_'+item.id+'">'
+    +'<div class="g2"><div class="field"><label>Tipo <span class="req">*</span></label><div class="pill-group">'+tipoPills+'</div></div>'
+    +'<div class="field"><label>Tipo de Faturamento</label><select onchange="setF('+item.id+',\'fat\',this.value)">'+fatOpts+'</select></div></div>'
+    +'<div class="field"><label>Item (Código + Descrição) <span class="req">*</span></label>'
+    +'<div class="ac-wrap"><input type="text" id="itemInput_'+item.id+'" value="'+esc(d.itemCodDesc)+'" placeholder="Digite código ou descrição para filtrar..." oninput="setF('+item.id+',\'itemCodDesc\',this.value);refreshTtl('+item.id+');searchItem('+item.id+')" autocomplete="off">'
+    +'<div id="itemAcBox_'+item.id+'"></div></div></div>'
+    +'<div class="field"><label>Descrição Técnica / Científica do Item</label>'
+    +'<textarea rows="2" placeholder="Descrição técnica detalhada, normas, materiais..." oninput="setF('+item.id+',\'descTec\',this.value)">'+esc(d.descTec)+'</textarea></div>'
+    +'<div class="g2"><div class="field"><label>Quantidade <span class="req">*</span></label>'
+    +'<input type="number" value="'+esc(d.qtd)+'" min="0" step="any" oninput="setF('+item.id+',\'qtd\',this.value)"></div>'
+    +'<div class="field"><label>UM <span class="req">*</span></label><div class="pill-group">'+umPills+'</div>'
+    +'<input type="text" class="um-other'+(d.um==='outro'?' show':'')+'" id="umO_'+item.id+'" value="'+esc(d.umOutro)+'" placeholder="Especificar unidade..." oninput="setF('+item.id+',\'umOutro\',this.value)"></div></div>'
+    +'<div class="g2"><div class="field"><label>Classe de Inspeção</label><select onchange="setF('+item.id+',\'insp\',this.value)">'+inspOpts+'</select></div>'
+    +'<div class="field"><label>Acabamento Superficial</label><select id="acabSel_'+item.id+'" onchange="setF('+item.id+',\'acab\',this.value);togAcO('+item.id+')">'+acabOpts+'</select>'
+    +'<input type="text" id="acO_'+item.id+'" value="'+esc(d.acabOutro)+'" placeholder="Especificar acabamento..." style="'+(d.acab==='Outro'?'':'display:none')+';margin-top:8px" oninput="setF('+item.id+',\'acabOutro\',this.value)"></div></div>'
+    +'<div class="field"><label>Observações do Item</label>'
+    +'<textarea rows="2" placeholder="Observações específicas deste item..." oninput="setF('+item.id+',\'obs\',this.value)">'+esc(d.obs)+'</textarea></div>'
+    +'</div></div>';
 }
 
-function esc(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function setF(id, key, val) {
-  const it = items.find(i => i.id === id);
-  if (it) it.data[key] = val;
-}
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setF(id,key,val) { const it=items.find(i=>i.id===id); if(it) it.data[key]=val; }
 
 function refreshTtl(id) {
-  const it = items.find(i => i.id === id);
-  if (!it) return;
-  const el = document.querySelector(`#ic_${id} .item-title`);
-  if (el) {
-    const d = it.data.itemCodDesc;
-    el.textContent = d ? `${numOf(it)} — ${d.slice(0,55)}${d.length>55?'…':''}` : `Item ${numOf(it)}`;
-  }
+  const it=items.find(i=>i.id===id); if(!it) return;
+  const el=document.getElementById('ttl_'+id); if(!el) return;
+  const d=it.data.itemCodDesc;
+  el.textContent = d ? numOf(it)+' — '+d.slice(0,55)+(d.length>55?'…':'') : 'Item '+numOf(it);
 }
 
 function togUmO(id) {
-  const it = items.find(i => i.id === id);
-  const el = document.getElementById(`umO_${id}`);
-  if (el) el.style.display = it?.data.um === 'outro' ? '' : 'none';
+  const it=items.find(i=>i.id===id), el=document.getElementById('umO_'+id);
+  if(el) el.classList.toggle('show', it&&it.data.um==='outro');
 }
 
 function togAcO(id) {
-  const it = items.find(i => i.id === id);
-  const el = document.getElementById(`acO_${id}`);
-  if (el) el.style.display = it?.data.acab === 'Outro' ? '' : 'none';
+  const it=items.find(i=>i.id===id), el=document.getElementById('acO_'+id);
+  if(el) el.style.display = it&&it.data.acab==='Outro' ? '' : 'none';
 }
 
-// ================================================================
-// COLLECT
-// ================================================================
-function getFrete() { return (document.querySelector('input[name="frete"]:checked') || {}).value || ''; }
+function getFrete() { return (document.querySelector('input[name="frete"]:checked')||{}).value||''; }
 
 function getEndereco() {
-  const manual = document.getElementById('outroEnd').checked;
-  if (manual) return { uf: document.getElementById('mUF').value, cidade: document.getElementById('mCidade').value, endereco: document.getElementById('mEnd').value };
-  return { uf: document.getElementById('aUF').value, cidade: document.getElementById('aCidade').value, endereco: document.getElementById('aEnd').value };
+  const m=document.getElementById('outroEnd').checked;
+  if(m) return {uf:document.getElementById('mUF').value, cidade:document.getElementById('mCidade').value, endereco:document.getElementById('mEnd').value};
+  return {uf:document.getElementById('aUF').value, cidade:document.getElementById('aCidade').value, endereco:document.getElementById('aEnd').value};
 }
 
 function collect() {
-  const end = getEndereco();
+  const end=getEndereco();
   return {
-    codigo_documento:     document.getElementById('codDoc').value,
-    revisao:              document.getElementById('revisao').value,
-    data_emissao:         document.getElementById('dataEmissao').value,
+    codigo_documento: document.getElementById('codDoc').value,
+    revisao: document.getElementById('revisao').value,
+    data_emissao: document.getElementById('dataEmissao').value,
     historico_alteracoes: document.getElementById('historico').value,
-    cliente:              document.getElementById('clienteInput').value,
-    contribuinte_icms:    document.getElementById('icms').value,
-    consumidor_final:     document.getElementById('consF').value,
-    contrato_cliente:     document.getElementById('contrato').value,
-    pedido_omie:          document.getElementById('omie').value,
-    proposta:             document.getElementById('proposta').value,
-    filial:               document.getElementById('filial').value,
-    obs_venda:            document.getElementById('obsVenda').value,
-    prazo_entrega:        document.getElementById('prazo').value,
-    tipo_frete:           getFrete(),
-    uf_entrega:           end.uf,
-    cidade_entrega:       end.cidade,
-    endereco_entrega:     end.endereco,
-    obs_logistica:        document.getElementById('obsLog').value,
-    obs_gerais:           document.getElementById('obsGerais').value,
+    cliente: document.getElementById('clienteInput').value,
+    contribuinte_icms: document.getElementById('icms').value,
+    consumidor_final: document.getElementById('consF').value,
+    contrato_cliente: document.getElementById('contrato').value,
+    pedido_omie: document.getElementById('omie').value,
+    proposta: document.getElementById('proposta').value,
+    filial: document.getElementById('filial').value,
+    obs_venda: document.getElementById('obsVenda').value,
+    prazo_entrega: document.getElementById('prazo').value,
+    tipo_frete: getFrete(),
+    uf_entrega: end.uf, cidade_entrega: end.cidade, endereco_entrega: end.endereco,
+    obs_logistica: document.getElementById('obsLog').value,
+    obs_gerais: document.getElementById('obsGerais').value,
     itens: items.map(it => {
-      const d = it.data;
-      const um   = d.um   === 'outro' ? d.umOutro   : d.um;
-      const acab = d.acab === 'Outro' ? d.acabOutro : d.acab;
-      return {
-        numero:           numOf(it),
-        hierarquia:       it.pid ? 'subitem' : 'pai',
-        item_pai:         it.pid ? numOf(items.find(i => i.id === it.pid)) : null,
-        tipo:             d.tipo,
-        faturamento:      d.fat,
-        item_cod_desc:    d.itemCodDesc,
-        desc_tecnica:     d.descTec,
-        quantidade:       d.qtd,
-        um, acab,
-        classe_inspecao:  d.insp,
-        obs:              d.obs
-      };
+      const d=it.data, um=d.um==='outro'?d.umOutro:d.um, acab=d.acab==='Outro'?d.acabOutro:d.acab;
+      return { numero:numOf(it), hierarquia:it.pid?'subitem':'pai', item_pai:it.pid?numOf(items.find(i=>i.id===it.pid)):null,
+               tipo:d.tipo, faturamento:d.fat, item_cod_desc:d.itemCodDesc, desc_tecnica:d.descTec,
+               quantidade:d.qtd, um, acab, classe_inspecao:d.insp, obs:d.obs };
     })
   };
 }
 
-// ================================================================
-// VALIDATION
-// ================================================================
 function validate(data) {
-  const req = [
-    [data.codigo_documento,     'Código do Documento'],
-    [data.revisao,              'Revisão'],
-    [data.data_emissao,         'Data de Emissão'],
-    [data.historico_alteracoes, 'Histórico de Alterações'],
-    [data.cliente,              'Cliente'],
-    [data.contribuinte_icms && data.contribuinte_icms !== '—' ? data.contribuinte_icms : '', 'Contribuinte ICMS (selecione um cliente)'],
-    [data.consumidor_final  && data.consumidor_final  !== '—' ? data.consumidor_final  : '', 'Consumidor Final (selecione um cliente)'],
-    [data.pedido_omie,          'Pedido Omie']
+  const req=[
+    [data.codigo_documento,'Código do Documento'],[data.revisao,'Revisão'],
+    [data.data_emissao,'Data de Emissão'],[data.historico_alteracoes,'Histórico de Alterações'],
+    [data.cliente,'Cliente'],
+    [data.contribuinte_icms&&data.contribuinte_icms!=='—'?data.contribuinte_icms:'','Contribuinte ICMS (selecione um cliente)'],
+    [data.consumidor_final&&data.consumidor_final!=='—'?data.consumidor_final:'','Consumidor Final (selecione um cliente)'],
+    [data.pedido_omie,'Pedido Omie']
   ];
-  for (const [v, l] of req) if (!v) return `Campo obrigatório não preenchido: ${l}`;
-  if (!data.itens.length) return 'Adicione ao menos um item.';
-  for (const it of data.itens) {
-    if (!it.item_cod_desc) return `Item ${it.numero}: campo "Item" é obrigatório.`;
-    if (!it.quantidade)    return `Item ${it.numero}: quantidade é obrigatória.`;
-    if (!it.um)            return `Item ${it.numero}: UM é obrigatória.`;
+  for(const [v,l] of req) if(!v) return 'Campo obrigatório não preenchido: '+l;
+  if(!data.itens.length) return 'Adicione ao menos um item.';
+  for(const it of data.itens){
+    if(!it.item_cod_desc) return 'Item '+it.numero+': campo "Item" é obrigatório.';
+    if(!it.quantidade) return 'Item '+it.numero+': quantidade é obrigatória.';
+    if(!it.um) return 'Item '+it.numero+': UM é obrigatória.';
   }
   return null;
 }
 
-// ================================================================
-// WEBHOOK
-// ================================================================
 async function enviar() {
-  const url = (CONFIG.WEBHOOK_URL || '').trim();
-  if (!url) { alert('URL do webhook não configurada. Edite CONFIG.WEBHOOK_URL no código-fonte.'); return; }
-  const data = collect();
-  const err  = validate(data);
-  if (err) { alert(err); return; }
+  const url=(CONFIG.WEBHOOK_URL||'').trim();
+  if(!url){showToast('URL do webhook não configurada.','error');return;}
+  const data=collect(), err=validate(data);
+  if(err){showToast(err,'error');return;}
   try {
-    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
-    alert(r.ok ? '✅ Enviado com sucesso ao Make / Monday.com!' : `❌ Erro HTTP ${r.status}`);
-  } catch(e) { alert('❌ Erro de rede. Verifique a URL do webhook.'); }
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    showToast(r.ok?'✅ Enviado com sucesso!':'❌ Erro HTTP '+r.status, r.ok?'success':'error');
+  } catch(e){showToast('❌ Erro de rede. Verifique a URL.','error');}
 }
 
-// ================================================================
-// PDF
-// ================================================================
 function gerarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc  = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
-  const data = collect();
-  const err  = validate(data);
-  if (err) { alert(err); return; }
-  const W=210, M=13, CW=W-M*2;
+  const {jsPDF}=window.jspdf;
+  const data=collect(), err=validate(data);
+  if(err){showToast(err,'error');return;}
+
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  // Helper: format date string YYYY-MM-DD → DD-MM-AAAA
+  function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T12:00:00'); return d.toLocaleDateString('pt-BR').replace(/\//g,'-'); }
+  const W=210, H=297, ML=14, MR=14, CW=W-ML-MR;
+  // Paleta
+  const RED=[192,57,43], DARK=[26,18,16], GRAY=[106,103,96], LGRAY=[224,219,213], WHITE=[255,255,255];
+  // Fonte base
+  doc.setFont('helvetica','normal');
   let y=0;
 
-  // Header bar
-  doc.setFillColor(17,17,17);
-  doc.rect(0,0,W,22,'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('PERPEC OILFIELD SUPPLY', M, 10);
-  doc.setFontSize(9); doc.setFont('helvetica','normal');
-  doc.text('Ordem de Fornecimento', M, 16);
-  doc.setFontSize(8);
-  doc.text(`Cód: ${data.codigo_documento||'—'}  Rev: ${data.revisao||'—'}  Emissão: ${data.data_emissao||'—'}`, W-M, 10, {align:'right'});
-  doc.text('FP-COM-0001', W-M, 16, {align:'right'});
-  y = 28;
-  doc.setTextColor(0,0,0);
+  // ── Helpers ────────────────────────────────────────────────────
+  function chk(n){if(y+n>H-12){newPage();}}
 
-  function chk(n=18) { if(y+n>276){ doc.addPage(); y=12; } }
+  function newPage(){
+    // rodapé da página atual
+    footerLine();
+    doc.addPage();
+    y=0;
+    pageHeader();
+    y+=4;
+  }
 
-  function secH(t) {
+  function setC(rgb){doc.setTextColor(rgb[0],rgb[1],rgb[2]);}
+  function setF2(rgb){doc.setFillColor(rgb[0],rgb[1],rgb[2]);}
+  function setDC(rgb){doc.setDrawColor(rgb[0],rgb[1],rgb[2]);}
+
+  // ── CABEÇALHO (replica o do PDF modelo) ───────────────────────
+  function pageHeader(){
+    // Linha vermelha superior
+    setF2(RED); doc.rect(0,0,W,1,'F');
+
+    // Logo placeholder — triângulo PERPEC estilizado
+    // Desenhar o triângulo vermelho do logo
+    setF2(RED);
+    doc.triangle(ML, 18, ML+7, 6, ML+14, 18, 'F');
+    // Texto PERPEC
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text('PERPEC', ML+16, 12);
+    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('OILFIELD SUPPLY', ML+16, 16.5);
+
+    // Título direita
+    doc.setFontSize(16); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text('Ordem de Fornecimento', W-MR, 11, {align:'right'});
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('FP-COM-0001 — Rev. '+( data.revisao||'0'), W-MR, 17, {align:'right'});
+
+    // Linha separadora cinza
+    setDC(LGRAY); doc.setLineWidth(0.3);
+    doc.line(ML, 22, W-MR, 22);
+
+    y = 28;
+
+    // Código + data: "OF" em cinza (mesmo padrão do label), código em negrito escuro
+    doc.setFontSize(10); doc.setFont('helvetica','bold');
+    setC(GRAY); // "OF" sem destaque — mesma cor cinza do texto secundário
+    doc.text('OF', ML, y);
+    const _ofW = doc.getTextWidth('OF ');
+    setC(DARK);
+    doc.text(( data.codigo_documento||'—'), ML + _ofW, y);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
+    const emissao = data.data_emissao ? fmtDate(data.data_emissao) : '—';
+    doc.text(emissao, W-MR, y, {align:'right'});
+    y += 8;
+  }
+
+  // ── RODAPÉ ────────────────────────────────────────────────────
+  function footerLine(){
+    const fy = H-8;
+    setDC(LGRAY); doc.setLineWidth(0.3); doc.line(ML, fy-2, W-MR, fy-2);
+    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setC(GRAY);
+    const emissao = data.data_emissao ? fmtDate(data.data_emissao) : '—';
+    doc.text('Gerado em '+emissao+' — PERPEC Oilfield Supply', ML, fy+1);
+    doc.text('OF '+(data.codigo_documento||'—'), W-MR, fy+1, {align:'right'});
+  }
+
+  // ── CAIXA DE SEÇÃO (card cinza claro com label e conteúdo) ─────
+  function sectionBox(labelTop, contentFn) {
+    // medir altura antes de desenhar
+    const startY = y;
+    // label pequeno cinza
     chk(10);
-    doc.setFillColor(17,17,17); doc.rect(M,y,CW,7,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
-    doc.text(t.toUpperCase(), M+3, y+5);
-    doc.setTextColor(0,0,0); y+=9;
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text(labelTop.toUpperCase(), ML+3, y+4.5);
+    y += 2;
+
+    const boxStartY = y;
+    contentFn(); // preenche conteúdo, avança y
+    const boxH = y - boxStartY + 4;
+
+    // Desenhar a caixa por cima (rect com borda)
+    setDC(LGRAY); doc.setLineWidth(0.3); setF2([248,247,245]);
+    doc.roundedRect(ML, boxStartY, CW, boxH, 2, 2, 'FD');
+    // redesenhar label (por cima do rect)
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text(labelTop.toUpperCase(), ML+3, boxStartY+4.5);
+
+    y = boxStartY + boxH + 4;
   }
 
-  function lv(label, val, x, w) {
-    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(100,100,100);
-    doc.text(label, x, y);
-    doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9);
-    const lines = doc.splitTextToSize(String(val||'—'), w-2);
-    doc.text(lines, x, y+4);
-    return lines.length*4.5+4;
+  // ── CAMPO label + valor dentro de caixas ──────────────────────
+  function field(label, value, x, w, baseY) {
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text(label, x, baseY);
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); setC(DARK);
+    const ls = doc.splitTextToSize(String(value||'—'), w-2);
+    doc.text(ls, x, baseY+4.5);
+    return ls.length * 4.8 + 5;
   }
 
-  function row2(l1,v1,l2,v2) {
-    chk(14); const h = Math.max(lv(l1,v1,M,CW/2), lv(l2,v2,M+CW/2,CW/2)); y+=h+2;
+  // ── LINHA DE SEPARAÇÃO interna ────────────────────────────────
+  function innerLine() {
+    setDC(LGRAY); doc.setLineWidth(0.2);
+    doc.line(ML+2, y, ML+CW-2, y);
+    y+=3;
   }
-  function row1(l,v) { chk(14); y+=lv(l,v,M,CW)+2; }
 
-  secH('Identificação da Venda');
-  row1('Cliente', data.cliente);
-  row2('Contribuinte ICMS', data.contribuinte_icms, 'Consumidor Final', data.consumidor_final);
-  row2('Contrato / Pedido (cliente)', data.contrato_cliente, 'Pedido Omie', data.pedido_omie);
-  row2('Proposta', data.proposta, 'Filial', data.filial);
-  if (data.obs_venda) row1('Obs. Venda', data.obs_venda);
-  y+=2;
+  // ── INÍCIO DO DOCUMENTO ───────────────────────────────────────
+  pageHeader();
 
-  secH('Identificação Logística');
-  row2('Prazo de Entrega', data.prazo_entrega, 'Tipo de Frete', data.tipo_frete);
-  row2('UF', data.uf_entrega, 'Cidade', data.cidade_entrega);
-  row1('Endereço de Entrega', data.endereco_entrega);
-  if (data.obs_logistica) row1('Obs. Logística', data.obs_logistica);
-  y+=2;
+  // == BLOCO: IDENTIFICAÇÃO DA VENDA ============================
+  chk(40);
+  { // caixa venda
+    const bY = y;
+    setDC(LGRAY); doc.setLineWidth(0.3); setF2([248,247,245]);
+    // altura provisória
+    doc.roundedRect(ML, bY, CW, 8, 2, 2, 'FD'); // placeholder
 
-  secH('Identificação dos Itens');
-  data.itens.forEach(it => {
-    chk(28);
-    const bg = it.hierarquia==='subitem' ? [250,240,210] : [220,220,220];
-    doc.setFillColor(...bg); doc.rect(M,y,CW,7,'F');
-    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0);
-    const hier = it.hierarquia==='subitem' ? ` [Sub de ${it.item_pai}]` : ' [Pai]';
-    doc.text(`${it.numero} — ${it.item_cod_desc||'Sem item'}${hier}`, M+2, y+5);
-    y+=9;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(60,60,60);
-    doc.text(`Qtde: ${it.quantidade||'—'}  |  UM: ${it.um||'—'}  |  Tipo: ${it.tipo||'—'}  |  Fat.: ${it.faturamento||'—'}  |  Insp.: ${it.classe_inspecao||'—'}  |  Acab.: ${it.acab||'—'}`, M, y);
-    y+=5;
-    if (it.desc_tecnica) {
-      const ls = doc.splitTextToSize(`Desc. Técnica: ${it.desc_tecnica}`, CW);
-      doc.text(ls,M,y); y+=ls.length*4.5;
+    // label topo
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('IDENTIFICAÇÃO DA VENDA', ML+3, bY+5);
+    y = bY + 10;
+
+    // Cliente (linha completa)
+    const h1 = field('Cliente', data.cliente, ML+4, CW-8, y);
+    y += h1;
+    innerLine();
+
+    // ICMS + Consumidor Final
+    const h2a = field('Contribuinte ICMS', data.contribuinte_icms, ML+4, CW/2-6, y);
+    const h2b = field('Consumidor Final', data.consumidor_final, ML+CW/2+2, CW/2-6, y);
+    y += Math.max(h2a,h2b);
+    innerLine();
+
+    // Contrato + Pedido Omie
+    const h3a = field('Contrato / Pedido (cliente)', data.contrato_cliente||'—', ML+4, CW/2-6, y);
+    const h3b = field('Pedido Omie', data.pedido_omie, ML+CW/2+2, CW/2-6, y);
+    y += Math.max(h3a,h3b);
+    innerLine();
+
+    // Proposta + Filial
+    const h4a = field('Proposta', data.proposta||'—', ML+4, CW/2-6, y);
+    const h4b = field('Filial', data.filial||'—', ML+CW/2+2, CW/2-6, y);
+    y += Math.max(h4a,h4b);
+
+    if(data.obs_venda){
+      innerLine();
+      const hObs = field('Obs. Venda', data.obs_venda, ML+4, CW-8, y);
+      y += hObs;
     }
-    if (it.obs) {
-      const ls = doc.splitTextToSize(`Obs.: ${it.obs}`, CW);
-      doc.text(ls,M,y); y+=ls.length*4.5;
+
+    const boxH = y - bY + 4;
+    setDC(LGRAY); doc.setLineWidth(0.3); setF2([248,247,245]);
+    doc.roundedRect(ML, bY, CW, boxH, 2, 2, 'FD');
+    // redraw label e campos (rect apaga os textos — precisa redesenhar)
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('IDENTIFICAÇÃO DA VENDA', ML+3, bY+5);
+    y = bY + 10;
+    const rh1 = field('Cliente', data.cliente, ML+4, CW-8, y); y+=rh1;
+    setDC(LGRAY);doc.setLineWidth(0.2);doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    const rh2a=field('Contribuinte ICMS',data.contribuinte_icms,ML+4,CW/2-6,y);
+    const rh2b=field('Consumidor Final',data.consumidor_final,ML+CW/2+2,CW/2-6,y);
+    y+=Math.max(rh2a,rh2b);
+    doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    const rh3a=field('Contrato / Pedido (cliente)',data.contrato_cliente||'—',ML+4,CW/2-6,y);
+    const rh3b=field('Pedido Omie',data.pedido_omie,ML+CW/2+2,CW/2-6,y);
+    y+=Math.max(rh3a,rh3b);
+    doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    const rh4a=field('Proposta',data.proposta||'—',ML+4,CW/2-6,y);
+    const rh4b=field('Filial',data.filial||'—',ML+CW/2+2,CW/2-6,y);
+    y+=Math.max(rh4a,rh4b);
+    if(data.obs_venda){doc.line(ML+2,y,ML+CW-2,y);y+=3;y+=field('Obs. Venda',data.obs_venda,ML+4,CW-8,y);}
+    y += 6;
+  }
+
+  // == BLOCO: IDENTIFICAÇÃO LOGÍSTICA ===========================
+  chk(40);
+  {
+    const bY=y;
+    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+    doc.text('IDENTIFICAÇÃO LOGÍSTICA',ML+3,bY+5);
+    y=bY+10;
+    const h1a=field('Data de Entrega',data.prazo_entrega? fmtDate(data.prazo_entrega) :'—',ML+4,CW/2-6,y);
+    const h1b=field('Tipo de Frete',data.tipo_frete||'—',ML+CW/2+2,CW/2-6,y);
+    y+=Math.max(h1a,h1b);
+    setDC(LGRAY);doc.setLineWidth(0.2);doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    const h2a=field('UF',data.uf_entrega||'—',ML+4,28,y);
+    const h2b=field('Cidade',data.cidade_entrega||'—',ML+36,CW/2-20,y);
+    y+=Math.max(h2a,h2b);
+    doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    const h3=field('Endereço',data.endereco_entrega||'—',ML+4,CW-8,y);
+    y+=h3;
+    if(data.obs_logistica){doc.line(ML+2,y,ML+CW-2,y);y+=3;y+=field('Obs. Logística',data.obs_logistica,ML+4,CW-8,y);}
+    const boxH=y-bY+4;
+    setDC(LGRAY);doc.setLineWidth(0.3);setF2([248,247,245]);
+    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+    doc.text('IDENTIFICAÇÃO LOGÍSTICA',ML+3,bY+5);
+    y=bY+10;
+    const rh1a=field('Data de Entrega',data.prazo_entrega? fmtDate(data.prazo_entrega) :'—',ML+4,CW/2-6,y);
+    const rh1b=field('Tipo de Frete',data.tipo_frete||'—',ML+CW/2+2,CW/2-6,y);
+    y+=Math.max(rh1a,rh1b);
+    setDC(LGRAY);doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    const rh2a=field('UF',data.uf_entrega||'—',ML+4,28,y);
+    const rh2b=field('Cidade',data.cidade_entrega||'—',ML+36,CW/2-20,y);
+    y+=Math.max(rh2a,rh2b);
+    doc.line(ML+2,y,ML+CW-2,y);y+=3;
+    y+=field('Endereço',data.endereco_entrega||'—',ML+4,CW-8,y);
+    if(data.obs_logistica){doc.line(ML+2,y,ML+CW-2,y);y+=3;y+=field('Obs. Logística',data.obs_logistica,ML+4,CW-8,y);}
+    y+=6;
+  }
+
+  // == TABELA DE ITENS ==========================================
+  chk(20);
+  // Título da seção
+  doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+  doc.text('IDENTIFICAÇÃO DOS ITENS',ML+3,y+5);
+  y+=10;
+
+  // Colunas: # | Código+Desc | Qtd | UM | Tipo | Fat. | Insp. | Acab. | Obs.
+  // Larguras (CW = 182mm)
+  const cols=[
+    {label:'#',       w:8},
+    {label:'Código + Descrição', w:56},
+    {label:'Qtd',     w:12},
+    {label:'UM',      w:11},
+    {label:'Tipo',    w:14},
+    {label:'Faturamento', w:24},
+    {label:'Inspeção',w:18},
+    {label:'Acabamento',w:20},
+    {label:'Obs.',    w:CW-8-56-12-11-14-24-18-20}
+  ];
+  // xs (posição x de cada coluna)
+  let xs=[ML];
+  for(let i=0;i<cols.length-1;i++) xs.push(xs[i]+cols[i].w);
+
+  function tableHeader(){
+    chk(8);
+    setF2([240,237,232]);setDC(LGRAY);doc.setLineWidth(0.2);
+    doc.rect(ML,y,CW,6,'FD');
+    doc.setFontSize(6.5);doc.setFont('helvetica','bold');setC(GRAY);
+    cols.forEach((c,i)=>{ doc.text(c.label, xs[i]+1, y+4); });
+    y+=6;
+    // linha inferior do header
+    setDC(LGRAY);doc.setLineWidth(0.4);
+    doc.line(ML,y,ML+CW,y);
+    y+=1;
+  }
+
+  tableHeader();
+
+  data.itens.forEach((it,idx)=>{
+    // Pré-calcular todas as linhas de texto para medir altura corretamente
+    const LH = 4.4; // line height mm
+    const PAD_TOP = 4, PAD_BOT = 4;
+
+    doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+    const descLines = doc.splitTextToSize(it.item_cod_desc||'—', cols[1].w-2);
+    const obsLines  = doc.splitTextToSize(it.obs||'—', cols[8].w-2);
+    const fatLines  = doc.splitTextToSize(it.faturamento||'—', cols[5].w-2);
+    const acabLines = doc.splitTextToSize(String(it.acab||'—'), cols[7].w-2);
+
+    // Desc. técnica: medir linhas e reservar espaço
+    doc.setFontSize(6.5);
+    const dtLines = it.desc_tecnica
+      ? doc.splitTextToSize('\u21b3 '+it.desc_tecnica, cols[1].w-2)
+      : [];
+
+    // Altura total da linha = maior das colunas + espaço para desc técnica
+    const mainLines = Math.max(descLines.length, obsLines.length, fatLines.length, acabLines.length, 1);
+    const mainH  = PAD_TOP + mainLines * LH + PAD_BOT;
+    const dtH    = dtLines.length > 0 ? dtLines.length * 3.8 + 2 : 0;
+    const rowH   = mainH + dtH;
+
+    chk(rowH + 2);
+    const rowY = y;
+
+    // Fundo: item pai = cinza suave, subitem = branco puro
+    if(it.hierarquia === 'pai') {
+      setF2([240,237,232]); // cinza-bege para item pai
+    } else {
+      setF2(WHITE);         // branco puro para subitem
     }
-    y+=2;
+    setDC(LGRAY); doc.setLineWidth(0.1);
+    doc.rect(ML, rowY, CW, rowH, 'F');
+
+    // Marca vermelha lateral apenas para subitem
+    if(it.hierarquia === 'subitem') {
+      setF2(RED); doc.rect(ML, rowY, 1.5, rowH, 'F');
+    }
+
+    // Linhas verticais entre colunas
+    setDC(LGRAY); doc.setLineWidth(0.1);
+    xs.slice(1).forEach(x => doc.line(x, rowY, x, rowY + rowH));
+
+    // Baseline do texto principal
+    const cY = rowY + PAD_TOP + (LH * 0.8);
+
+    // # — número
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text(it.numero, xs[0]+cols[0].w/2, cY, {align:'center'});
+
+    // Código + Desc (parte principal, sem desc técnica)
+    doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(DARK);
+    doc.text(descLines, xs[1]+1, cY);
+
+    // Qtd
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text(String(it.quantidade||'—'), xs[2]+cols[2].w/2, cY, {align:'center'});
+
+    // UM
+    doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(DARK);
+    doc.text(String(it.um||'—'), xs[3]+1, cY);
+
+    // Tipo
+    doc.text(String(it.tipo||'—'), xs[4]+1, cY);
+
+    // Faturamento
+    doc.text(fatLines, xs[5]+1, cY);
+
+    // Inspeção
+    doc.text(String(it.classe_inspecao||'—'), xs[6]+1, cY);
+
+    // Acabamento
+    doc.text(acabLines, xs[7]+1, cY);
+
+    // Obs.
+    doc.text(obsLines, xs[8]+1, cY);
+
+    // Desc. técnica: abaixo do bloco principal, dentro da mesma linha
+    if(dtLines.length > 0) {
+      const dtStartY = rowY + mainH; // logo abaixo do bloco principal
+      // linha divisória interna sutil
+      setDC([200,195,190]); doc.setLineWidth(0.15);
+      doc.line(xs[1], dtStartY, xs[1]+cols[1].w, dtStartY);
+      doc.setFontSize(6.5); doc.setFont('helvetica','italic'); setC(GRAY);
+      doc.text(dtLines, xs[1]+1, dtStartY + 3.2);
+    }
+
+    // Linha inferior da row
+    setDC(LGRAY); doc.setLineWidth(0.2);
+    doc.line(ML, rowY+rowH, ML+CW, rowY+rowH);
+
+    y = rowY + rowH + 0.5;
   });
 
-  if (data.obs_gerais) { chk(20); secH('Observações Gerais'); row1('',data.obs_gerais); }
+  y+=4;
 
-  chk(20); secH('Histórico de Alterações');
-  row2('Revisão', data.revisao, 'Data de Emissão', data.data_emissao);
-  if (data.historico_alteracoes) row1('Descrição', data.historico_alteracoes);
+  // Borda externa da tabela
+  setDC(LGRAY);doc.setLineWidth(0.4);
+  // (já foi desenhado linha por linha)
 
-  const tot = doc.internal.getNumberOfPages();
-  for (let i=1;i<=tot;i++) {
-    doc.setPage(i); doc.setFontSize(7); doc.setTextColor(160,160,160);
-    doc.text('Perpec Oilfield Supply | Documento Controlado — Não reproduzir sem autorização', W/2, 291, {align:'center'});
-    doc.text(`${i}/${tot}`, W-M, 291, {align:'right'});
+  // == OBSERVAÇÕES GERAIS =======================================
+  if(data.obs_gerais){
+    chk(20);
+    const bY=y;
+    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+    doc.text('OBSERVAÇÕES GERAIS',ML+3,bY+5);
+    y=bY+10;
+    const hOg=field('',data.obs_gerais,ML+4,CW-8,y);
+    y+=hOg;
+    const boxH=y-bY+4;
+    setDC(LGRAY);doc.setLineWidth(0.3);setF2([248,247,245]);
+    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+    doc.text('OBSERVAÇÕES GERAIS',ML+3,bY+5);
+    y=bY+10;
+    y+=field('',data.obs_gerais,ML+4,CW-8,y);
+    y+=6;
   }
 
-  doc.save(`OF-${(data.codigo_documento||'OF').replace(/[^a-zA-Z0-9-]/g,'_')}.pdf`);
+  // == HISTÓRICO ================================================
+  chk(20);
+  {
+    const bY=y;
+    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+    doc.text('HISTÓRICO DE ALTERAÇÕES',ML+3,bY+5);
+    y=bY+10;
+    const h1a=field('Revisão',data.revisao||'—',ML+4,30,y);
+    const emissao=data.data_emissao?fmtDate(data.data_emissao):'—';
+    const h1b=field('Data de Emissão',emissao,ML+38,50,y);
+    const h1c=field('Histórico',data.historico_alteracoes||'—',ML+92,CW-96,y);
+    y+=Math.max(h1a,h1b,h1c);
+    const boxH=y-bY+4;
+    setDC(LGRAY);doc.setLineWidth(0.3);setF2([248,247,245]);
+    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+    doc.text('HISTÓRICO DE ALTERAÇÕES',ML+3,bY+5);
+    y=bY+10;
+    const rh1a=field('Revisão',data.revisao||'—',ML+4,30,y);
+    const emissao2=data.data_emissao?fmtDate(data.data_emissao):'—';
+    const rh1b=field('Data de Emissão',emissao2,ML+38,50,y);
+    const rh1c=field('Histórico',data.historico_alteracoes||'—',ML+92,CW-96,y);
+    y+=Math.max(rh1a,rh1b,rh1c);
+    y+=6;
+  }
+
+  // Rodapé de todas as páginas
+  const tot=doc.internal.getNumberOfPages();
+  for(let i=1;i<=tot;i++){
+    doc.setPage(i);
+    footerLine();
+  }
+
+  doc.save('OF-'+(data.codigo_documento||'OF').replace(/[^a-zA-Z0-9-]/g,'_')+'.pdf');
 }
 
-// ================================================================
-// DOCX
-// ================================================================
 async function gerarDOCX() {
-  const data = collect();
-  const err  = validate(data);
-  if (err) { alert(err); return; }
-
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-          AlignmentType, BorderStyle, WidthType, ShadingType } = docx;
-
-  const bdr    = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
-  const bdrAll = { top:bdr, bottom:bdr, left:bdr, right:bdr };
-  const cm     = { top:70, bottom:70, left:110, right:110 };
-  const TW     = 9360;
-
-  function secH(text) {
-    return new Paragraph({
-      children: [new TextRun({ text: text.toUpperCase(), bold:true, color:'FFFFFF', size:18, font:'Arial' })],
-      shading: { fill:'111111', type: ShadingType.CLEAR },
-      spacing: { before:140, after:60 }, indent:{ left:80 }
-    });
-  }
-
-  function mkRow(cells) {
-    return new TableRow({ children: cells.map(({ text, width, bold, bg }) =>
-      new TableCell({
-        borders: bdrAll,
-        width: { size: width||Math.floor(TW/cells.length), type: WidthType.DXA },
-        margins: cm,
-        shading: bg ? { fill:bg, type: ShadingType.CLEAR } : undefined,
-        children: [new Paragraph({ children: [new TextRun({ text: String(text||'—'), bold:!!bold, size:18, font:'Arial', color:'111111' })] })]
-      })
-    )});
-  }
-
-  const ch = [];
-
-  ch.push(new Paragraph({
-    children:[new TextRun({ text:'ORDEM DE FORNECIMENTO', bold:true, size:30, font:'Arial', color:'111111' })],
-    alignment: AlignmentType.CENTER, spacing:{ before:0, after:80 }
-  }));
-  ch.push(new Paragraph({
-    children:[new TextRun({ text:`Código: ${data.codigo_documento||'—'}   |   Rev: ${data.revisao||'—'}   |   Emissão: ${data.data_emissao||'—'}`, size:17, font:'Arial', color:'444444' })],
-    alignment: AlignmentType.CENTER, spacing:{ before:0, after:180 }
-  }));
-
-  // VENDA
+  const data=collect(), err=validate(data);
+  if(err){showToast(err,'error');return;}
+  const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType}=docx;
+  const bdr={style:BorderStyle.SINGLE,size:1,color:'CCCCCC'}, bdrAll={top:bdr,bottom:bdr,left:bdr,right:bdr};
+  const cm={top:70,bottom:70,left:110,right:110}, TW=9360;
+  function secH(text){return new Paragraph({children:[new TextRun({text:text.toUpperCase(),bold:true,color:'FFFFFF',size:18,font:'Arial'})],shading:{fill:'1A1210',type:ShadingType.CLEAR},spacing:{before:140,after:60},indent:{left:80}});}
+  function mkRow(cells){return new TableRow({children:cells.map(({text,width,bold,bg})=>new TableCell({borders:bdrAll,width:{size:width||Math.floor(TW/cells.length),type:WidthType.DXA},margins:cm,shading:bg?{fill:bg,type:ShadingType.CLEAR}:undefined,children:[new Paragraph({children:[new TextRun({text:String(text||'—'),bold:!!bold,size:18,font:'Arial',color:'111111'})]})]}))}); }
+  const ch=[];
+  ch.push(new Paragraph({children:[new TextRun({text:'ORDEM DE FORNECIMENTO',bold:true,size:30,font:'Arial',color:'1A1210'})],alignment:AlignmentType.CENTER,spacing:{before:0,after:80}}));
+  ch.push(new Paragraph({children:[new TextRun({text:'OF '+(data.codigo_documento||'—')+'   |   Rev: '+(data.revisao||'—')+'   |   Emissão: '+((data.data_emissao?data.data_emissao.split('-').reverse().join('-'):'—')),size:17,font:'Arial',color:'444444'})],alignment:AlignmentType.CENTER,spacing:{before:0,after:180}}));
   ch.push(secH('Identificação da Venda'));
-  ch.push(new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[TW], rows:[mkRow([{text:data.cliente,bold:true,width:TW}])] }));
-  ch.push(new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[4680,4680], rows:[
-    mkRow([{text:`ICMS: ${data.contribuinte_icms}`,width:4680},{text:`Consumidor Final: ${data.consumidor_final}`,width:4680}]),
-    mkRow([{text:`Contrato: ${data.contrato_cliente}`,width:4680},{text:`Pedido Omie: ${data.pedido_omie}`,width:4680}]),
-    mkRow([{text:`Proposta: ${data.proposta}`,width:4680},{text:`Filial: ${data.filial}`,width:4680}]),
-    ...(data.obs_venda?[mkRow([{text:`Obs.: ${data.obs_venda}`,width:TW}])]:[])
+  ch.push(new Table({width:{size:TW,type:WidthType.DXA},columnWidths:[TW],rows:[mkRow([{text:data.cliente,bold:true,width:TW}])]}));
+  ch.push(new Table({width:{size:TW,type:WidthType.DXA},columnWidths:[4680,4680],rows:[
+    mkRow([{text:'ICMS: '+data.contribuinte_icms,width:4680},{text:'Consumidor Final: '+data.consumidor_final,width:4680}]),
+    mkRow([{text:'Contrato: '+data.contrato_cliente,width:4680},{text:'Pedido Omie: '+data.pedido_omie,width:4680}]),
+    mkRow([{text:'Proposta: '+data.proposta,width:4680},{text:'Filial: '+data.filial,width:4680}]),
+    ...(data.obs_venda?[mkRow([{text:'Obs.: '+data.obs_venda,width:TW}])]:[])
   ]}));
-
-  // LOGÍSTICA
   ch.push(secH('Identificação Logística'));
-  ch.push(new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[4680,4680], rows:[
-    mkRow([{text:`Prazo: ${data.prazo_entrega}`,width:4680},{text:`Frete: ${data.tipo_frete}`,width:4680}]),
-    mkRow([{text:`UF: ${data.uf_entrega}`,width:2340},{text:`Cidade: ${data.cidade_entrega}`,width:7020-2340+2340}]),
-    mkRow([{text:`Endereço: ${data.endereco_entrega}`,width:TW}]),
-    ...(data.obs_logistica?[mkRow([{text:`Obs.: ${data.obs_logistica}`,width:TW}])]:[])
+  ch.push(new Table({width:{size:TW,type:WidthType.DXA},columnWidths:[4680,4680],rows:[
+    mkRow([{text:'Data de Entrega: '+(data.prazo_entrega?data.prazo_entrega.split('-').reverse().join('-'):'—'),width:4680},{text:'Frete: '+data.tipo_frete,width:4680}]),
+    mkRow([{text:'UF: '+data.uf_entrega,width:2340},{text:'Cidade: '+data.cidade_entrega,width:7020}]),
+    mkRow([{text:'Endereço: '+data.endereco_entrega,width:TW}]),
+    ...(data.obs_logistica?[mkRow([{text:'Obs.: '+data.obs_logistica,width:TW}])]:[])
   ]}));
-
-  // ITENS
   ch.push(secH('Identificação dos Itens'));
-  if (!data.itens.length) {
-    ch.push(new Paragraph({ children:[new TextRun({text:'Nenhum item cadastrado.',size:18,font:'Arial'})] }));
-  } else {
-    data.itens.forEach(it => {
-      const bg  = it.hierarquia==='subitem' ? 'FEF3C7' : 'E0E0E0';
-      const lbl = it.hierarquia==='subitem' ? ` [Sub de ${it.item_pai}]` : ' [Item Pai]';
-      ch.push(new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[TW], rows:[
-        new TableRow({ children:[new TableCell({ borders:bdrAll, width:{size:TW,type:WidthType.DXA}, margins:cm,
-          shading:{fill:bg,type:ShadingType.CLEAR},
-          children:[new Paragraph({children:[new TextRun({text:`${it.numero} — ${it.item_cod_desc||'Sem item'}${lbl}`,bold:true,size:18,font:'Arial'})]})]
-        })]}),
-        mkRow([
-          {text:`Qtde: ${it.quantidade}`,width:1560},
-          {text:`UM: ${it.um}`,width:1170},
-          {text:`Tipo: ${it.tipo}`,width:1560},
-          {text:`Fat.: ${it.faturamento||'—'}`,width:2535},
-          {text:`Insp.: ${it.classe_inspecao||'—'}`,width:2535}
-        ]),
-        mkRow([{text:`Acabamento: ${it.acab||'—'}`,width:TW}]),
-        ...(it.desc_tecnica?[mkRow([{text:`Desc. Técnica: ${it.desc_tecnica}`,width:TW}])]:[]),
-        mkRow([{text:`Obs.: ${it.obs||'—'}`,width:TW}])
+  if(!data.itens.length){ch.push(new Paragraph({children:[new TextRun({text:'Nenhum item cadastrado.',size:18,font:'Arial'})]}));}
+  else{
+    data.itens.forEach(it=>{
+      const bg=it.hierarquia==='subitem'?'FEF3C7':'E0E0E0', lbl=it.hierarquia==='subitem'?' [Sub de '+it.item_pai+']':' [Item Pai]';
+      ch.push(new Table({width:{size:TW,type:WidthType.DXA},columnWidths:[TW],rows:[
+        new TableRow({children:[new TableCell({borders:bdrAll,width:{size:TW,type:WidthType.DXA},margins:cm,shading:{fill:bg,type:ShadingType.CLEAR},children:[new Paragraph({children:[new TextRun({text:it.numero+' — '+(it.item_cod_desc||'Sem item')+lbl,bold:true,size:18,font:'Arial'})]})]})] }),
+        mkRow([{text:'Qtde: '+it.quantidade,width:1560},{text:'UM: '+it.um,width:1170},{text:'Tipo: '+it.tipo,width:1560},{text:'Fat.: '+(it.faturamento||'—'),width:2535},{text:'Insp.: '+(it.classe_inspecao||'—'),width:2535}]),
+        mkRow([{text:'Acabamento: '+(it.acab||'—'),width:TW}]),
+        ...(it.desc_tecnica?[mkRow([{text:'Desc. Técnica: '+it.desc_tecnica,width:TW}])]:[]),
+        mkRow([{text:'Obs.: '+(it.obs||'—'),width:TW}])
       ]}));
       ch.push(new Paragraph({children:[],spacing:{before:60}}));
     });
   }
-
-  if (data.obs_gerais) {
-    ch.push(secH('Observações Gerais'));
-    ch.push(new Paragraph({children:[new TextRun({text:data.obs_gerais,size:18,font:'Arial'})],spacing:{before:40,after:40}}));
-  }
-
+  if(data.obs_gerais){ch.push(secH('Observações Gerais'));ch.push(new Paragraph({children:[new TextRun({text:data.obs_gerais,size:18,font:'Arial'})],spacing:{before:40,after:40}}));}
   ch.push(secH('Histórico de Alterações'));
-  ch.push(new Table({ width:{size:TW,type:WidthType.DXA}, columnWidths:[2340,4680,2340], rows:[
+  ch.push(new Table({width:{size:TW,type:WidthType.DXA},columnWidths:[2340,4680,2340],rows:[
     mkRow([{text:'Revisão',bold:true,width:2340},{text:'Histórico de Alterações',bold:true,width:4680},{text:'Data Emissão',bold:true,width:2340}]),
-    mkRow([{text:data.revisao,width:2340},{text:data.historico_alteracoes,width:4680},{text:data.data_emissao,width:2340}])
+    mkRow([{text:data.revisao,width:2340},{text:data.historico_alteracoes,width:4680},{text:(data.data_emissao?data.data_emissao.split('-').reverse().join('-'):'—'),width:2340}])
   ]}));
-  ch.push(new Paragraph({
-    children:[new TextRun({text:'Perpec Oilfield Supply | Documento Controlado — Não reproduzir sem autorização',size:14,font:'Arial',color:'AAAAAA',italics:true})],
-    alignment:AlignmentType.CENTER, spacing:{before:280}
-  }));
-
-  const doc2 = new Document({ sections:[{ properties:{ page:{ size:{width:11906,height:16838}, margin:{top:900,right:900,bottom:900,left:900} } }, children:ch }] });
-  const buf  = await Packer.toBuffer(doc2);
-  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-  const a    = window.document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = `OF-${(data.codigo_documento||'OF').replace(/[^a-zA-Z0-9-]/g,'_')}.docx`;
-  a.click(); URL.revokeObjectURL(a.href);
+  ch.push(new Paragraph({children:[new TextRun({text:'Perpec Oilfield Supply | Documento Controlado — Não reproduzir sem autorização',size:14,font:'Arial',color:'AAAAAA',italics:true})],alignment:AlignmentType.CENTER,spacing:{before:280}}));
+  const doc2=new Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:900,right:900,bottom:900,left:900}}},children:ch}]});
+  const buf=await Packer.toBuffer(doc2);
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  const a=window.document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='OF-'+(data.codigo_documento||'OF').replace(/[^a-zA-Z0-9-]/g,'_')+'.docx'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-// ================================================================
-// CLEAR
-// ================================================================
 function limpar() {
-  if (!confirm('Limpar todo o formulário?')) return;
-  items = []; idCtr = 0;
-  document.querySelectorAll('input[type="text"],input[type="number"],textarea').forEach(el => { el.value=''; });
-  document.querySelectorAll('input[type="date"]').forEach(el => { el.value=''; });
-  document.querySelectorAll('select').forEach(el => { el.selectedIndex=0; });
-  document.querySelectorAll('input[type="radio"]').forEach(el => { el.checked=el.defaultChecked; });
-  document.getElementById('dataEmissao').value = new Date().toISOString().slice(0,10);
-  document.getElementById('cfBadge').style.display = 'none';
-  document.getElementById('outroEnd').checked = false;
-  toggleEnd(); selCliente = null; renderItems();
+  if(!confirm('Limpar todo o formulário?')) return;
+  items=[]; idCtr=0;
+  document.querySelectorAll('input[type="text"],input[type="number"],textarea').forEach(el=>{el.value='';});
+  document.querySelectorAll('input[type="date"]').forEach(el=>{el.value='';});
+  document.querySelectorAll('select').forEach(el=>{el.selectedIndex=0;});
+  document.querySelectorAll('input[type="radio"]').forEach(el=>{el.checked=el.defaultChecked;});
+  document.getElementById('dataEmissao').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cfBadge').style.display='none';
+  document.getElementById('outroEnd').checked=false;
+  toggleEnd(); selCliente=null; renderItems(); updHdr();
 }
 </script>
 </body>
