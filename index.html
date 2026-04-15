@@ -162,7 +162,7 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
       <span class="doc-code-prefix">OF</span>
       <span class="doc-code-val" id="hdrCodeVal">—</span>
     </div>
-    <span class="doc-meta">FP-COM-0001 RevForm.00 &nbsp;|&nbsp; <span id="stripInfo">—</span></span>
+    <span class="doc-meta">FP-COM-0002 RevForm.00 &nbsp;|&nbsp; <span id="stripInfo">—</span></span>
     <span class="doc-req">* Campos obrigatórios</span>
   </div>
 </div>
@@ -850,7 +850,7 @@ async function gerarPDF() {
   function footerLine(){
     const pg=doc.internal.getCurrentPageInfo().pageNumber, tot=doc.internal.getNumberOfPages();
     doc.setFontSize(6.5);doc.setFont('helvetica','italic');setC([170,165,160]);
-    doc.text('Perpec Oilfield Supply  •  FP-COM-0001 Rev01 •  Ordem de Fornecimento',W/2,H-6,{align:'center'});
+    doc.text('Perpec Oilfield Supply  •  FP-COM-0002 Rev01 •  Ordem de Fornecimento',W/2,H-6,{align:'center'});
     doc.setFont('helvetica','normal');
     doc.text('Pág. '+pg+' / '+tot,W-MR,H-6,{align:'right'});
   }
@@ -861,7 +861,7 @@ async function gerarPDF() {
     doc.setFontSize(13); doc.setFont('helvetica','bold'); setC(DARK);
     doc.text('Ordem de Fornecimento',W-MR,9,{align:'right'});
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text('FP-COM-0001 RevForm.00',W-MR,15,{align:'right'});
+    doc.text('FP-COM-0002 RevForm.00',W-MR,15,{align:'right'});
     y=22;
     setF2(WHITE); doc.rect(ML,y,CW,9,'F');
     doc.setFontSize(15); doc.setFont('helvetica','bold'); setC(DARK);
