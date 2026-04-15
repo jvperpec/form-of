@@ -162,7 +162,7 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
       <span class="doc-code-prefix">OF</span>
       <span class="doc-code-val" id="hdrCodeVal">—</span>
     </div>
-    <span class="doc-meta">FP-COM-0001 &nbsp;|&nbsp; <span id="stripInfo">—</span></span>
+    <span class="doc-meta">FP-COM-0001 RevForm.00 &nbsp;|&nbsp; <span id="stripInfo">—</span></span>
     <span class="doc-req">* Campos obrigatórios</span>
   </div>
 </div>
@@ -179,11 +179,11 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
     <div class="card-body">
       <div class="g2" style="margin-bottom:13px">
         <div class="field">
-          <label>Código do Documento <span class="req">*</span></label>
-          <input type="text" id="codDoc" placeholder="Ex: OF-001" oninput="updHdr()">
+          <label>Número da OF <span class="req">*</span></label>
+          <input type="text" id="codDoc" placeholder="Ex.: 0001" maxlength="4" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4);updHdr()">
         </div>
         <div class="field">
-          <label>Revisão <span class="req">*</span></label>
+          <label>Revisão da OF <span class="req">*</span></label>
           <input type="text" id="revisao" placeholder="Ex: Rev. 00" oninput="updHdr()">
         </div>
       </div>
@@ -230,7 +230,7 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
           <input type="text" id="icms" readonly placeholder="Preenchido pelo cadastro">
         </div>
         <div class="field">
-          <label>Consumidor Final <span class="req">*</span></label>
+          <label>Tipo de Cliente <span class="req">*</span></label>
           <input type="text" id="consF" readonly placeholder="Preenchido pelo cadastro">
         </div>
       </div>
@@ -241,18 +241,14 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
           <input type="text" id="contrato" placeholder="Nº do contrato...">
         </div>
         <div class="field">
-          <label>Pedido Omie <span class="req">*</span></label>
-          <input type="text" id="omie" placeholder="Nº Omie...">
+          <label>Proposta Ploomes</label>
+          <input type="text" id="proposta" placeholder="Nº da proposta...">
         </div>
       </div>
       <div class="g2" style="margin-bottom:13px">
         <div class="field">
-          <label>Proposta</label>
-          <input type="text" id="proposta" placeholder="Nº da proposta...">
-        </div>
-        <div class="field">
-          <label>Filial</label>
-          <select id="filial"><option value="">Carregando...</option></select>
+          <label>Filial da Venda <span class="req">*</span></label>
+          <select id="filial" onchange="updHdr()"><option value="">Carregando...</option></select>
         </div>
       </div>
       <div class="field">
@@ -272,7 +268,7 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
       <div class="g2" style="margin-bottom:13px">
         <div class="field">
           <label>Data de Entrega <span class="req">*</span></label>
-          <input type="date" id="prazoEntrega">
+          <input type="date" id="prazoEntrega" style="cursor:pointer">
         </div>
         <div class="field">
           <label>Tipo de Frete <span class="req">*</span></label>
@@ -299,10 +295,10 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
         </div>
         <div id="endManual" style="display:none">
           <div class="g2" style="margin-bottom:10px">
-            <div class="field"><label>UF</label><input type="text" id="mUF" placeholder="UF"></div>
-            <div class="field"><label>Cidade</label><input type="text" id="mCidade" placeholder="Cidade"></div>
+            <div class="field"><label>UF <span class="req">*</span></label><input type="text" id="mUF" placeholder="UF"></div>
+            <div class="field"><label>Cidade <span class="req">*</span></label><input type="text" id="mCidade" placeholder="Cidade"></div>
           </div>
-          <div class="field"><label>Logradouro / Bairro</label><input type="text" id="mEnd" placeholder="Rua, nº, Bairro..."></div>
+          <div class="field"><label>Logradouro / Bairro <span class="req">*</span></label><input type="text" id="mEnd" placeholder="Rua, nº, Bairro..."></div>
         </div>
       </div>
       <div class="field" style="margin-top:13px">
@@ -326,7 +322,7 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
         Nenhum item adicionado. Clique em "Adicionar Item" abaixo.
       </div>
       <button class="btn-add-item" onclick="addItem()">
-        <span style="font-size:20px;line-height:1">+</span> Adicionar Item Pai
+        <span style="font-size:20px;line-height:1">+</span> Adicionar Item
       </button>
     </div>
   </div>
@@ -349,9 +345,8 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
     <div class="act-group">
       <button class="btn btn-outline" onclick="limpar()">Limpar Tudo</button>
     </div>
-    <div class="act-group">
-      <button class="btn btn-outline" onclick="gerarPDF()">⬇ Gerar PDF</button>
-      <button class="btn btn-red" id="btnEnviar" onclick="enviar()">Enviar para Make / Monday →</button>
+    <div class="act-group" style="align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-red" id="btnEmitir" onclick="emitirOF()">⬆ Emitir OF</button>
     </div>
   </div>
 
@@ -372,13 +367,35 @@ window.onload = () => {
   updHdr(); loadClientes(); loadFiliais(); loadFaturamento(); loadItens(); loadInspecao(); loadAcabamento();
 };
 
+function fmtDateInput(el) {
+  // Auto-formata para DD-MM-YYYY enquanto o usuário digita
+  let v = el.value.replace(/\D/g,'');
+  if(v.length>2) v = v.slice(0,2)+'-'+v.slice(2);
+  if(v.length>5) v = v.slice(0,5)+'-'+v.slice(5,9);
+  el.value = v;
+}
+
+function getFilialIndex() {
+  const sel = document.getElementById('filial');
+  if (!sel || !sel.value) return '';
+  return String(sel.selectedIndex + 1); // 1 para primeira opção (Matriz), 2 para segunda, etc.
+}
+
+function getCodigoDoc() {
+  const of = (document.getElementById('codDoc').value || '').replace(/\D/g,'').slice(0,4);
+  const fx = getFilialIndex();
+  if (!of && !fx) return '';
+  const num = of.padStart(4,'0');
+  return fx ? fx + '.' + num : num;
+}
+
 function updHdr() {
-  const cod = document.getElementById('codDoc').value;
+  const cod = getCodigoDoc();
   const rev = document.getElementById('revisao').value;
   const dat = document.getElementById('dataEmissao').value;
   document.getElementById('hdrCodeVal').textContent = cod || '—';
-  const datFmt = dat ? dat.split('-').reverse().join('-') : '';
-  const p = []; if(rev) p.push('Rev. '+rev); if(datFmt) p.push(datFmt);
+  const datFmt = dat ? dat.split('-').reverse().join('/') : '';
+  const p = []; if(rev) p.push('Rev da OF. '+rev); if(datFmt) p.push(datFmt);
   document.getElementById('stripInfo').textContent = p.join(' | ') || '—';
 }
 
@@ -396,7 +413,7 @@ async function loadClientes() {
       const c = l.split(';');
       return { cnpj_nome:(c[0]||'').trim(), icms:(c[1]||'').trim(), cf:(c[2]||'').trim(),
                end:(c[3]||'').trim(), bairro:(c[4]||'').trim(), cidade:(c[5]||'').trim(), uf:(c[6]||'').trim(), cep:(c[7]||'').trim() };
-    });
+    }).filter(c => c.cnpj_nome && c.cnpj_nome.toLowerCase() !== 'cnpj_nome');
   } catch(e) {}
 }
 
@@ -470,8 +487,11 @@ async function loadItens() {
   try {
     const txt = await (await fetch(CONFIG.ITENS_CSV_URL)).text();
     itensData = txt.split('\n').filter(l=>l.trim()).map(l => {
-      const p=l.split(';'); const cod=(p[0]||'').trim(), desc=(p[1]||'').trim();
-      return { cod, desc, label: cod&&desc ? cod+' — '+desc : cod||desc };
+      const cols=l.split(';');
+const cod=(cols[0]||'').trim();
+const desc=(cols[1]||'').trim();
+const descCientifica=cols.slice(2).join(';').trim();
+return { cod, desc, label: cod&&desc ? cod+' — '+desc : cod||desc, descricao_cientifica: descCientifica };
     }).filter(i=>i.label);
   } catch(e) {}
 }
@@ -489,11 +509,11 @@ async function loadAcabamento() {
 function renderItemList(id, q) {
   const list = document.getElementById('itemList_'+id); if (!list) return;
   const r = (q||'').length < 1
-    ? itensData.slice(0,120)
-    : itensData.filter(i=>i.label.toLowerCase().includes((q||'').toLowerCase())).slice(0,120);
+    ? itensData.slice(0,120).map((i,_)=>({item:i,globalIdx:itensData.indexOf(i)}))
+    : itensData.map((i,gi)=>({item:i,globalIdx:gi})).filter(({item})=>item.label.toLowerCase().includes((q||'').toLowerCase())).slice(0,120);
   list.innerHTML = r.length
-    ? r.map((i, idx)=>'<div class="ac-item" onclick="selectItem('+id+','+idx+')">'
-        +'<div class="ac-name">'+esc(i.label)+'</div></div>').join('')
+    ? r.map(({item,globalIdx})=>'<div class="ac-item" onmousedown="event.preventDefault();selectItem('+id+','+globalIdx+')">'
+        +'<div class="ac-name">'+esc(item.label)+'</div></div>').join('')
     : '<div class="ac-none">Nenhum resultado</div>';
 }
 function filterItems(id, q) { renderItemList(id, q); }
@@ -517,52 +537,72 @@ function selectItem(id, idx) {
   const lbl = document.getElementById('itemLabel_'+id);
   if (inp) inp.value = label;
   if (lbl) { lbl.textContent = label; lbl.className = 'ac-cv'; }
-  setF(id, 'itemCodDesc', label); refreshTtl(id); closeAllAcPanels();
+  setF(id, 'itemCodDesc', label);
+  if (item.descricao_cientifica) {
+    setF(id, 'descTec', item.descricao_cientifica);
+    const ta = document.getElementById('descTec_'+id);
+    if (ta) ta.value = item.descricao_cientifica;
+  }
+  refreshTtl(id); closeAllAcPanels();
 }
 
 
 function addItem() {
   idCtr++;
-  items.push({id:idCtr,pid:null,data:{tipo:'Venda',fat:'',gain:'',itemCodDesc:'',descTec:'',qtd:'',um:'un.',umOutro:'',insp:'',acab:'Bruto',acabOutro:'',obs:''}});
-  renderItems(); togBody(idCtr);
-}
-
-function addSubOf(pid) {
-  idCtr++;
-  items.push({id:idCtr,pid,data:{tipo:'Venda',fat:'',gain:'',itemCodDesc:'',descTec:'',qtd:'',um:'un.',umOutro:'',insp:'',acab:'Bruto',acabOutro:'',obs:''}});
+  items.push({id:idCtr,pid:null,data:{tipo:'Venda',fat:'',gain:'',omie:'',itemCodDesc:'',descTec:'',qtd:'',um:'un.',umOutro:'',insp:'',acab:'',acabOutro:'',obs:''}});
   renderItems(); togBody(idCtr);
 }
 
 function removeItem(id) {
-  if (!confirm('Remover este item? (Subitens também serão removidos)')) return;
-  items = items.filter(i=>i.id!==id&&i.pid!==id); renderItems();
+  if (!confirm('Remover este item?')) return;
+  items = items.filter(i=>i.id!==id); renderItems();
 }
 
 function togBody(id) { const el=document.getElementById('ib_'+id); if(el) el.classList.toggle('open'); }
 
 function numOf(item) {
-  const tops=items.filter(i=>!i.pid), pIdx=tops.indexOf(item);
-  if(pIdx!==-1) return (pIdx+1).toString();
-  const parent=items.find(i=>i.id===item.pid), pNum=numOf(parent);
-  const subs=items.filter(i=>i.pid===item.pid);
-  return pNum+'.'+( subs.indexOf(item)+1 );
+  const idx = items.indexOf(item);
+  return (idx+1).toString();
 }
 
-function lastTop() { return items.some(i=>!i.pid); }
+function lastTop() { return items.length > 0; }
 
 function renderItems() {
   const box=document.getElementById('itemsBox'), noEl=document.getElementById('noItems');
-  const cnt=document.getElementById('itemCount'), btn=document.getElementById('btnEnviar');
-  if (!items.length) { box.innerHTML=''; noEl.style.display=''; btn.disabled=true; cnt.textContent='0 itens'; return; }
-  noEl.style.display='none'; btn.disabled=!lastTop();
+  const cnt=document.getElementById('itemCount');
+  if (!items.length) { box.innerHTML=''; noEl.style.display=''; cnt.textContent='0 itens'; return; }
+  noEl.style.display='none';
   cnt.textContent=items.length+' '+(items.length===1?'item':'itens');
   let html='';
-  items.filter(i=>!i.pid).forEach(p => { html+=renderCard(p); items.filter(i=>i.pid===p.id).forEach(s=>{html+=renderCard(s);}); });
+  items.forEach(p => { html+=renderCard(p); });
   box.innerHTML=html;
+  // Sync select values into data so PDF picks up the actual rendered value
+  items.forEach(it => {
+    const acabEl = document.getElementById('acabSel_'+it.id);
+    if (acabEl) { if(!it.data.acab) it.data.acab = acabEl.value; else acabEl.value = it.data.acab; }
+    const ibEl = document.getElementById('ib_'+it.id);
+    if (ibEl) {
+      const selects = ibEl.querySelectorAll('select');
+      // insp is the first select in the item body (faturamento is in g2 first, then insp)
+      // find by checking options
+      selects.forEach(sel => {
+        if (sel.id && sel.id.startsWith('acabSel_')) return; // already handled
+        const opts = Array.from(sel.options).map(o=>o.value);
+        // faturamento select: synced via onchange
+        // insp select: sync if not yet set
+        if (opts.includes('Visual') || opts.includes('') ) {
+          if(!it.data.insp) it.data.insp = sel.value;
+        }
+        if (opts.some(o=>['Venda Direta','Entrega Futura','Remessa p/ Industrialização'].includes(o))) {
+          if(!it.data.fat) it.data.fat = sel.value;
+        }
+      });
+    }
+  });
 }
 
 function renderCard(item) {
-  const num=numOf(item), isSub=!!item.pid, d=item.data;
+  const num=numOf(item), d=item.data;
   const preview = d.itemCodDesc ? num+' — '+d.itemCodDesc.slice(0,55)+(d.itemCodDesc.length>55?'…':'') : 'Item '+num;
 
   const umPills = UM_OPTS.map(u => {
@@ -589,21 +629,22 @@ function renderCard(item) {
   const fatOpts  = FAT_OPTS.map(f=>'<option value="'+f+'" '+(d.fat===f?'selected':'')+'>'+(f||'Selecione...')+'</option>').join('');
   const inspOpts = INSP_OPTS.map(v=>'<option value="'+v+'" '+(d.insp===v?'selected':'')+'>'+(v||'Selecione...')+'</option>').join('');
 
-  return '<div class="item-card'+(isSub?' sub':'')+' item-anim" id="ic_'+item.id+'">'
+  return '<div class="item-card item-anim" id="ic_'+item.id+'">'
     +'<div class="item-head" onclick="togBody('+item.id+')">'
-    +'<span class="item-badge'+(isSub?' sub-badge':'')+'">'+( isSub ? 'SUB '+num : 'ITEM '+num )+'</span>'
-    +'<span class="item-title-text" id="ttl_'+item.id+'">'+esc(preview)+'</span>'
+    +'<span class="item-badge">ITEM '+num+'</span>'
+    +'<span class="item-title-text" id="ttl_'+item.id+'">'+esc(d.itemCodDesc?d.itemCodDesc.slice(0,60)+(d.itemCodDesc.length>60?'…':''):'')+'</span>'
     +'<div class="item-acts" onclick="event.stopPropagation()">'
-    +(!isSub?'<button class="btn-add-sub" onclick="addSubOf('+item.id+')">+sub</button>':'')
     +'<button class="btn-remove" onclick="removeItem('+item.id+')">×</button>'
     +'</div></div>'
     +'<div class="item-body" id="ib_'+item.id+'">'
     +'<div class="g2"><div class="field"><label>Tipo <span class="req">*</span></label><div class="pill-group">'+tipoPills+'</div></div>'
-    +'<div class="field"><label>Tipo de Faturamento</label><select onchange="setF('+item.id+',\'fat\',this.value)">'+fatOpts+'</select></div></div>'
+    +'<div class="field"><label>Tipo de Faturamento <span class="req">*</span></label><select onchange="setF('+item.id+',\'fat\',this.value)">'+fatOpts+'</select></div></div>'
+    +'<div class="g2" style="margin-bottom:0"><div class="field"><label>Pedido Omie <span class="req">*</span></label>'
+    +'<input type="text" value="'+esc(d.omie||'')+'" placeholder="Nº Omie..." oninput="setF('+item.id+',\'omie\',this.value)"></div></div>'
     +'<div class="field"><label>Tipo de Ganho <span class="req">*</span></label><div class="pill-group">'+gainPills+'</div></div>'
     +'<div class="field"><label>Item (Código + Descrição) <span class="req">*</span></label>'
     +'<div class="ac-wrap" id="itemWrap_'+item.id+'">'
-    +'<button type="button" class="ac-display" id="itemBtn_'+item.id+'" onclick="toggleItemPanel('+item.id+')">'  
+    +'<button type="button" class="ac-display" id="itemBtn_'+item.id+'" onclick="toggleItemPanel('+item.id+')">'
     +'<span id="itemLabel_'+item.id+'" class="'+(d.itemCodDesc?'ac-cv':'ac-ph')+'">'+(d.itemCodDesc?esc(d.itemCodDesc):'Selecione ou pesquise um item…')+'</span>'
     +'<span class="ac-arrow">▼</span></button>'
     +'<input type="hidden" id="itemInput_'+item.id+'" value="'+esc(d.itemCodDesc)+'">'
@@ -611,14 +652,14 @@ function renderCard(item) {
     +'<div class="ac-search-box"><input type="text" id="itemSearch_'+item.id+'" placeholder="Pesquisar código ou descrição…" oninput="filterItems('+item.id+',this.value)" onclick="event.stopPropagation()"></div>'
     +'<div class="ac-list" id="itemList_'+item.id+'"></div>'
     +'</div></div></div>'
-    +'<div class="field"><label>Descrição Técnica / Científica do Item</label>'
-    +'<textarea rows="2" placeholder="Descrição técnica detalhada, normas, materiais..." oninput="setF('+item.id+',\'descTec\',this.value)">'+esc(d.descTec)+'</textarea></div>'
+    +'<div class="field"><label>Descrição Científica do Item</label>'
+    +'<textarea id="descTec_'+item.id+'" rows="3" maxlength="1000" placeholder="Preenchida automaticamente ao selecionar o item. Editável manualmente (máx. 1000 caracteres)." oninput="setF('+item.id+',\'descTec\',this.value)">'+esc(d.descTec)+'</textarea></div>'
     +'<div class="g2"><div class="field"><label>Quantidade <span class="req">*</span></label>'
     +'<input type="number" value="'+esc(d.qtd)+'" min="0" step="any" oninput="setF('+item.id+',\'qtd\',this.value)"></div>'
     +'<div class="field"><label>UM <span class="req">*</span></label><div class="pill-group">'+umPills+'</div>'
     +'<input type="text" class="um-other'+(d.um==='outro'?' show':'')+'" id="umO_'+item.id+'" value="'+esc(d.umOutro)+'" placeholder="Especificar unidade..." oninput="setF('+item.id+',\'umOutro\',this.value)"></div></div>'
-    +'<div class="g2"><div class="field"><label>Classe de Inspeção</label><select onchange="setF('+item.id+',\'insp\',this.value)">'+inspOpts+'</select></div>'
-    +'<div class="field"><label>Acabamento Superficial</label><select id="acabSel_'+item.id+'" onchange="setF('+item.id+',\'acab\',this.value);togAcO('+item.id+')">'+acabOpts+'</select>'
+    +'<div class="g2"><div class="field"><label>Classe de Inspeção <span class="req">*</span></label><select onchange="setF('+item.id+',\'insp\',this.value)">'+inspOpts+'</select></div>'
+    +'<div class="field"><label>Acabamento Superficial <span class="req">*</span></label><select id="acabSel_'+item.id+'" onchange="setF('+item.id+',\'acab\',this.value);togAcO('+item.id+')" data-item-id="'+item.id+'">'+acabOpts+'</select>'
     +'<input type="text" id="acO_'+item.id+'" value="'+esc(d.acabOutro)+'" placeholder="Especificar acabamento..." style="'+(d.acab==='Outro'?'':'display:none')+';margin-top:8px" oninput="setF('+item.id+',\'acabOutro\',this.value)"></div></div>'
     +'<div class="field"><label>Observações do Item</label>'
     +'<textarea rows="2" placeholder="Observações específicas deste item..." oninput="setF('+item.id+',\'obs\',this.value)">'+esc(d.obs)+'</textarea></div>'
@@ -632,7 +673,7 @@ function refreshTtl(id) {
   const it=items.find(i=>i.id===id); if(!it) return;
   const el=document.getElementById('ttl_'+id); if(!el) return;
   const d=it.data.itemCodDesc;
-  el.textContent = d ? numOf(it)+' — '+d.slice(0,55)+(d.length>55?'…':'') : 'Item '+numOf(it);
+  el.textContent = d ? d.slice(0,60)+(d.length>60?'…':'') : '';
 }
 
 function togUmO(id) {
@@ -653,40 +694,187 @@ function getEndereco() {
   return {uf:document.getElementById('aUF').value, cidade:document.getElementById('aCidade').value, endereco:document.getElementById('aEnd').value};
 }
 
-async function enviar() {
-  const dat={codigo_documento:document.getElementById('codDoc').value,revisao:document.getElementById('revisao').value,data_emissao:document.getElementById('dataEmissao').value,historico_alteracoes:document.getElementById('historico').value,cliente:selCliente?selCliente.cnpj_nome:'',contribuinte_icms:document.getElementById('icms').value,consumidor_final:document.getElementById('consF').value,contrato_cliente:document.getElementById('contrato').value,pedido_omie:document.getElementById('omie').value,proposta:document.getElementById('proposta').value,filial:document.getElementById('filial').value,obs_venda:document.getElementById('obsVenda').value,prazo_entrega:document.getElementById('prazoEntrega').value,tipo_frete:getFrete()};
-  const {uf,cidade,endereco}=getEndereco(); dat.uf_entrega=uf; dat.cidade_entrega=cidade; dat.endereco_entrega=endereco;
-  dat.obs_logistica=document.getElementById('obsLog').value; dat.obs_gerais=document.getElementById('obsGerais').value;
-  dat.itens=items.map(it=>{const d=it.data; return {numero:numOf(it),hierarquia:it.pid?'filho':'pai',tipo:d.tipo,faturamento:d.fat,ganho:d.gain,item_cod_desc:d.itemCodDesc,desc_tecnica:d.descTec,quantidade:d.qtd,um:d.um==='outro'?d.umOutro:d.um,classe_inspecao:d.insp,acab:d.acab==='Outro'?d.acabOutro:d.acab,obs:d.obs};});
-  if(!CONFIG.WEBHOOK_URL){ showToast('WEBHOOK_URL vazio. Configure em CONFIG.','error'); return; }
-  try{await fetch(CONFIG.WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dat)});showToast('Enviado com sucesso!','success');}catch(e){showToast('Erro ao enviar: '+e,'error');}
+function validarFormulario() {
+  const erros = [];
+
+  // Campos globais obrigatórios
+  if (!document.getElementById('codDoc').value.trim()) erros.push('Número OF');
+  if (!document.getElementById('revisao').value.trim()) erros.push('Revisão');
+  if (!document.getElementById('dataEmissao').value) erros.push('Data de Emissão');
+  if (!document.getElementById('historico').value.trim()) erros.push('Histórico de Alterações');
+  if (!selCliente) erros.push('Cliente');
+  if (!document.getElementById('filial').value) erros.push('Filial');
+  if (!document.getElementById('prazoEntrega').value) erros.push('Data de Entrega');
+  if (!getFrete()) erros.push('Tipo de Frete');
+
+  // Endereço manual obrigatório
+  if (document.getElementById('outroEnd').checked) {
+    if (!document.getElementById('mUF').value.trim()) erros.push('UF (endereço manual)');
+    if (!document.getElementById('mCidade').value.trim()) erros.push('Cidade (endereço manual)');
+    if (!document.getElementById('mEnd').value.trim()) erros.push('Logradouro (endereço manual)');
+  }
+
+  // Itens
+  if (!items.length) { erros.push('Adicione pelo menos um item'); return erros; }
+
+  items.forEach((it, idx) => {
+    const d = it.data, n = idx + 1;
+    if (!d.tipo) erros.push('Item '+n+': Tipo');
+    if (!d.fat) erros.push('Item '+n+': Tipo de Faturamento');
+    if (!d.omie || !d.omie.trim()) erros.push('Item '+n+': Pedido Omie');
+    if (!d.gain) erros.push('Item '+n+': Tipo de Ganho');
+    if (!d.itemCodDesc) erros.push('Item '+n+': Código + Descrição');
+    if (!d.qtd || isNaN(parseFloat(d.qtd)) || parseFloat(d.qtd) <= 0) erros.push('Item '+n+': Quantidade');
+    if (!d.um) erros.push('Item '+n+': UM');
+    if (d.um === 'outro' && !d.umOutro.trim()) erros.push('Item '+n+': UM (especificar)');
+    if (!d.insp) erros.push('Item '+n+': Classe de Inspeção');
+    if (!d.acab) erros.push('Item '+n+': Acabamento Superficial');
+    if (d.acab === 'Outro' && !d.acabOutro.trim()) erros.push('Item '+n+': Acabamento (especificar)');
+  });
+
+  return erros;
 }
 
-function gerarPDF() {
+async function emitirOF() {
+  const erros = validarFormulario();
+  if (erros.length) {
+    showToast('Preencha os campos obrigatórios:\n• ' + erros.slice(0,4).join('\n• ') + (erros.length > 4 ? '\n  ...e mais '+(erros.length-4) : ''), 'error');
+    // Highlight visually
+    erros.forEach(e => {
+      // scroll first item with error into view
+    });
+    return;
+  }
+
+  const btn = document.getElementById('btnEmitir');
+  btn.disabled = true; btn.textContent = '⏳ Emitindo...';
+
+  try {
+    // 1. Gera o PDF
+    await gerarPDF();
+
+    // 2. Envia para Make/Monday se URL configurada
+    if (CONFIG.WEBHOOK_URL) {
+      const dat = coletarDados();
+      try {
+        await fetch(CONFIG.WEBHOOK_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(dat)});
+        showToast('OF emitida e enviada com sucesso!', 'success');
+      } catch(e) {
+        showToast('PDF gerado. Erro ao enviar para Make: ' + e, 'error');
+      }
+    } else {
+      showToast('OF emitida! (Webhook não configurado)', 'success');
+    }
+  } catch(e) {
+    showToast('Erro ao emitir OF: ' + e, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '⬆ Emitir OF';
+  }
+}
+
+function coletarDados() {
+  const dat = {
+    codigo_documento: getCodigoDoc(),
+    revisao: document.getElementById('revisao').value,
+    data_emissao: document.getElementById('dataEmissao').value,
+    historico_alteracoes: document.getElementById('historico').value,
+    cliente: selCliente ? selCliente.cnpj_nome : '',
+    contribuinte_icms: document.getElementById('icms').value,
+    consumidor_final: document.getElementById('consF').value,
+    contrato_cliente: document.getElementById('contrato').value,
+    proposta: document.getElementById('proposta').value,
+    filial: document.getElementById('filial').value,
+    obs_venda: document.getElementById('obsVenda').value,
+    prazo_entrega: document.getElementById('prazoEntrega').value,
+    tipo_frete: getFrete()
+  };
+  const {uf, cidade, endereco} = getEndereco();
+  dat.uf_entrega = uf; dat.cidade_entrega = cidade; dat.endereco_entrega = endereco;
+  dat.obs_logistica = document.getElementById('obsLog').value;
+  dat.obs_gerais = document.getElementById('obsGerais').value;
+  dat.itens = items.map(it => {
+    const d = it.data;
+    return {
+      numero: numOf(it), tipo: d.tipo, faturamento: d.fat, ganho: d.gain,
+      pedido_omie: d.omie || '', item_cod_desc: d.itemCodDesc,
+      descricao_cientifica: d.descTec || '', quantidade: d.qtd,
+      um: d.um === 'outro' ? d.umOutro : d.um,
+      classe_inspecao: d.insp, acab: d.acab === 'Outro' ? d.acabOutro : d.acab, obs: d.obs
+    };
+  });
+  return dat;
+}
+
+async function enviar() { /* legado — substituído por emitirOF */ }
+
+
+
+// Carrega logo do repositório como base64 no início
+(function loadLogoFromRepo(){
+  if(window.LOGO_B64) return;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function(){
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img,0,0);
+      window.LOGO_B64 = canvas.toDataURL('image/png');
+    } catch(e){}
+  };
+  img.src = 'PERPEC - LOGO PRINCIPAL.png';
+})();
+
+async function gerarPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const fmtDate=d=>(d&&d.split&&d.split('-').length===3?d.split('-').reverse().join('/'):d||'—');
-  const data={codigo_documento:document.getElementById('codDoc').value,revisao:document.getElementById('revisao').value,data_emissao:document.getElementById('dataEmissao').value,historico_alteracoes:document.getElementById('historico').value,cliente:selCliente?selCliente.cnpj_nome:'',contribuinte_icms:document.getElementById('icms').value,consumidor_final:document.getElementById('consF').value,contrato_cliente:document.getElementById('contrato').value,pedido_omie:document.getElementById('omie').value,proposta:document.getElementById('proposta').value,filial:document.getElementById('filial').value,obs_venda:document.getElementById('obsVenda').value,prazo_entrega:document.getElementById('prazoEntrega').value,tipo_frete:getFrete()};
-  const {uf,cidade,endereco}=getEndereco(); data.uf_entrega=uf; data.cidade_entrega=cidade; data.endereco_entrega=endereco;
-  data.obs_logistica=document.getElementById('obsLog').value; data.obs_gerais=document.getElementById('obsGerais').value;
-  data.itens=items.map(it=>{const d=it.data; return {numero:numOf(it),hierarquia:it.pid?'filho':'pai',tipo:d.tipo,faturamento:d.fat,ganho:d.gain,item_cod_desc:d.itemCodDesc,desc_tecnica:d.descTec,quantidade:d.qtd,um:d.um==='outro'?d.umOutro:d.um,classe_inspecao:d.insp,acab:d.acab==='Outro'?d.acabOutro:d.acab,obs:d.obs};});
-  
-  const WHITE=[255,255,255],DARK=[26,18,16],LGRAY=[224,219,213],GRAY=[135,130,125],RED=[192,57,43],BG_CARD=[250,248,245],BG_PAI=[255,250,247];
+  const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+  // DD-MM-YYYY já vem formatado do campo; normaliza para exibição no PDF
+  const fmtDate=d=>{
+    if(!d) return '—';
+    // aceita DD-MM-YYYY ou YYYY-MM-DD
+    const p=d.split(/[-\/]/);
+    if(p.length===3){
+      if(p[0].length===4) return p[2]+'/'+p[1]+'/'+p[0]; // YYYY-MM-DD -> DD/MM/YYYY
+      return p[0]+'/'+p[1]+'/'+p[2]; // DD-MM-YYYY -> DD/MM/YYYY
+    }
+    return d;
+  };
+  const data = coletarDados();
+
+  const WHITE=[255,255,255],DARK=[26,18,16],LGRAY=[224,219,213],GRAY=[135,130,125],RED=[192,57,43],BG_CARD=[250,248,245],BG_ROW=[255,250,247],DESC_BG=[248,246,243];
   let y=0; const W=210,H=297,ML=10,MR=10,CW=W-ML-MR,PAD=1.5,LH=3.8;
   function setC(c){doc.setTextColor(...c);} function setF2(c){doc.setFillColor(...c);} function setD(c){doc.setDrawColor(...c);}
-  function footerLine(){doc.setFontSize(6.5);doc.setFont('helvetica','italic');setC([170,165,160]);doc.text('Perpec Oilfield Supply  •  FP-COM-0001  •  Ordem de Fornecimento',W/2,H-6,{align:'center'});}
-  function pageHeader(){
-    doc.setFontSize(16); doc.setFont('helvetica','bold'); setC(DARK);
-    doc.text('Ordem de Fornecimento',ML,y+8);
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text('FP-COM-0001',W-MR,y+8,{align:'right'}); y+=15;
-    setC(GRAY); doc.text('OF',ML,y);
-    setC(DARK); doc.text(data.codigo_documento||'—',ML+doc.getTextWidth('OF '),y);
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text(fmtDate(data.data_emissao),W-MR,y,{align:'right'}); y+=8;
+
+  const logoB64 = window.LOGO_B64 || '';
+
+  function footerLine(){
+    const pg=doc.internal.getCurrentPageInfo().pageNumber, tot=doc.internal.getNumberOfPages();
+    doc.setFontSize(6.5);doc.setFont('helvetica','italic');setC([170,165,160]);
+    doc.text('Perpec Oilfield Supply  •  FP-COM-0001 Rev01 •  Ordem de Fornecimento',W/2,H-6,{align:'center'});
+    doc.setFont('helvetica','normal');
+    doc.text('Pág. '+pg+' / '+tot,W-MR,H-6,{align:'right'});
   }
+
+  function pageHeader(){
+    if(logoB64){ try{ doc.addImage(logoB64,'PNG',ML,3,38,10); }catch(e){} }
+    setD(RED); doc.setLineWidth(0.8); doc.line(0,18,W,18);
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text('Ordem de Fornecimento',W-MR,9,{align:'right'});
+    doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('FP-COM-0001 RevForm.00',W-MR,15,{align:'right'});
+    y=22;
+    setF2(WHITE); doc.rect(ML,y,CW,9,'F');
+    doc.setFontSize(15); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text('OF',ML+3,y+6.5);
+    doc.setFontSize(15); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text(data.codigo_documento||'—',ML+12,y+6.5);
+    doc.setFontSize(10); doc.setFont('helvetica','normal'); setC(DARK);
+    doc.text(fmtDate(data.data_emissao),W-MR,y+5.8,{align:'right'}); y+=13;
+  }
+
   function newPage(){footerLine();doc.addPage();y=0;pageHeader();y+=4;}
   function chk(n){if(y+n>H-14){newPage();}}
+
   function mF(label,val,x,w){
     doc.setFontSize(9); doc.setFont('helvetica','bold');
     const lines=doc.splitTextToSize(String(val||'—'),w-2);
@@ -713,61 +901,134 @@ function gerarPDF() {
     });
     y=bY+boxH+4;
   }
+
   pageHeader();
-  {const rows=[mRow([mF('Cliente',data.cliente,ML+4,CW-8)]),
-    mRow([mF('Contribuinte ICMS',data.contribuinte_icms,ML+4,CW/2-6),mF('Consumidor Final',data.consumidor_final,ML+CW/2+2,CW/2-6)]),
-    mRow([mF('Contrato / Pedido (cliente)',data.contrato_cliente||'—',ML+4,CW/2-6),mF('Pedido Omie',data.pedido_omie,ML+CW/2+2,CW/2-6)]),
-    mRow([mF('Proposta',data.proposta||'—',ML+4,CW/2-6),mF('Filial',data.filial||'—',ML+CW/2+2,CW/2-6)])];
-  if(data.obs_venda) rows.push(mRow([mF('Obs. Venda',data.obs_venda,ML+4,CW-8)]));
+  {
+  // Larguras para 3 colunas em CW=190: col1=52, col2=52, col3=resto
+  const C1=52,C2=52,C3=CW-8-C1-C2,x1=ML+4,x2=ML+4+C1+4,x3=ML+4+C1+4+C2+4;
+  const rows=[
+    mRow([mF('Cliente',data.cliente,x1,CW-8)]),
+    mRow([mF('Contribuinte ICMS',data.contribuinte_icms,x1,C1),mF('Consumidor Final',data.consumidor_final,x2,C2),mF('Filial',data.filial||'—',x3,C3)]),
+    mRow([mF('Contrato / Pedido (cliente)',data.contrato_cliente||'—',x1,C1),mF('Proposta',data.proposta||'—',x2,C2)])
+  ];
+  if(data.obs_venda) rows.push(mRow([mF('Obs. Venda',data.obs_venda,x1,CW-8)]));
   drawCard('Identificação da Venda',rows,rows.reduce((a,r)=>a+r.h,0));}
   {const rows=[mRow([mF('Data de Entrega',fmtDate(data.prazo_entrega),ML+4,CW/2-6),mF('Tipo de Frete',data.tipo_frete||'—',ML+CW/2+2,CW/2-6)]),
-    mRow([mF('UF',data.uf_entrega||'—',ML+4,28),mF('Cidade',data.cidade_entrega||'—',ML+36,CW/2-20)]),
-    mRow([mF('Endereço',data.endereco_entrega||'—',ML+4,CW-8)])];
+    mRow([mF('UF',data.uf_entrega||'—',ML+4,18),mF('Cidade',data.cidade_entrega||'—',ML+22,45),mF('Endereço',data.endereco_entrega||'—',ML+67,CW-71)])];
   if(data.obs_logistica) rows.push(mRow([mF('Obs. Logística',data.obs_logistica,ML+4,CW-8)]));
   drawCard('Identificação Logística',rows,rows.reduce((a,r)=>a+r.h,0));}
+
   chk(20);
   doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
   doc.text('IDENTIFICAÇÃO DOS ITENS',ML+3,y+5); y+=10;
-  const cols=[{label:'#',w:8},{label:'Código + Descrição',w:55},{label:'Qtd',w:12},{label:'UM',w:11},{label:'Tipo',w:14},{label:'Faturamento',w:24},{label:'Inspeção',w:18},{label:'Acabamento',w:21},{label:'Obs.',w:CW-8-55-12-11-14-24-18-21}];
+
+  const cols=[{label:'#',w:8},{label:'Código + Descrição',w:57},{label:'Qtd',w:10},{label:'UM',w:10},{label:'Tipo',w:13},{label:'Ped. Omie',w:20},{label:'Tipo Saída',w:24},{label:'Inspeção',w:16},{label:'Acabamento',w:CW-8-57-10-10-13-20-24-16}];
   const xs=[ML]; for(let i=0;i<cols.length-1;i++) xs.push(xs[i]+cols[i].w);
-  function tblH(){chk(8);setF2([240,237,232]);setD(LGRAY);doc.setLineWidth(0.2);doc.rect(ML,y,CW,6,'FD');doc.setFontSize(6.5);doc.setFont('helvetica','bold');setC(GRAY);cols.forEach((c,i)=>doc.text(c.label,xs[i]+1,y+4));y+=6;setD(LGRAY);doc.setLineWidth(0.4);doc.line(ML,y,ML+CW,y);y+=1;}
-  tblH();
+
+  function tblHeader(){
+    chk(8);
+    setF2([240,237,232]);setD(LGRAY);doc.setLineWidth(0.2);doc.rect(ML,y,CW,6,'FD');
+    doc.setFontSize(6.5);doc.setFont('helvetica','bold');setC(GRAY);
+    cols.forEach((c,i)=>doc.text(c.label,xs[i]+1,y+4));
+    y+=6;setD(LGRAY);doc.setLineWidth(0.4);doc.line(ML,y,ML+CW,y);y+=1;
+  }
+  tblHeader();
+
   data.itens.forEach(it=>{
     doc.setFontSize(7.5); doc.setFont('helvetica','normal');
     const dL=doc.splitTextToSize(it.item_cod_desc||'—',cols[1].w-2);
-    const oL=doc.splitTextToSize(it.obs||'—',cols[8].w-2);
-    const fL=doc.splitTextToSize(it.faturamento||'—',cols[5].w-2);
-    const aL=doc.splitTextToSize(String(it.acab||'—'),cols[7].w-2);
-    doc.setFontSize(6.5); doc.setFont('helvetica','italic');
-    const dtL=it.desc_tecnica?doc.splitTextToSize('↳ '+it.desc_tecnica,cols[1].w-2):[];
+    const oL=doc.splitTextToSize(it.pedido_omie||'—',cols[5].w-2);
+    const fL=doc.splitTextToSize(it.faturamento||'—',cols[6].w-2);
+    const aL=doc.splitTextToSize(String(it.acab||'—'),cols[8].w-2);
     const mLn=Math.max(dL.length,oL.length,fL.length,aL.length,1);
-    const mainH=PAD+mLn*LH+PAD, dtH=dtL.length>0?dtL.length*4.0+PAD:0, rowH=mainH+dtH;
-    chk(rowH+2); const rowY=y;
-    setF2(it.hierarquia==='pai'?BG_PAI:WHITE); setD(LGRAY); doc.setLineWidth(0.1);
-    doc.rect(ML,rowY,CW,rowH,'F');
-    if(it.hierarquia==='pai'){setF2(RED);doc.rect(ML,rowY,1.5,rowH,'F');}
-    if(dtL.length>0){setD([200,195,190]);doc.setLineWidth(0.1);doc.line(xs[1]+1,rowY+mainH,xs[1]+cols[1].w-1,rowY+mainH);}
-    setD(LGRAY); doc.setLineWidth(0.1); xs.slice(1).forEach(x=>doc.line(x,rowY,x,rowY+rowH));
+    const mainH=PAD+mLn*LH+PAD;
+
+    // Descrição científica — pré-calcula altura para verificar quebra de página
+    const hasDesc=it.descricao_cientifica && it.descricao_cientifica.trim();
+    let dcHcalcPre=0;
+    if(hasDesc){
+      doc.setFontSize(7); doc.setFont('helvetica','bold');
+      const LABEL_PRE='D.Científica:  ';
+      const labelWPre=doc.getTextWidth(LABEL_PRE);
+      doc.setFont('helvetica','normal');
+      const textLinesPre=doc.splitTextToSize(it.descricao_cientifica, CW-6-labelWPre);
+      dcHcalcPre=PAD+textLinesPre.length*3.8+PAD;
+    }
+    const totalH=mainH+dcHcalcPre;
+
+    // Se não cabe a linha inteira, nova página e repete cabeçalho
+    if(y+totalH>H-14){ footerLine(); doc.addPage(); y=0; pageHeader(); y+=4; tblHeader(); }
+
+    const rowY=y;
+    // Fundo da linha principal
+    setF2(BG_ROW); setD(LGRAY); doc.setLineWidth(0.1);
+    doc.rect(ML,rowY,CW,mainH,'F');
+    // Barra vermelha lateral
+    setF2(RED); doc.rect(ML,rowY,1.5,mainH,'F');
+    // Linhas de coluna
+    setD(LGRAY); doc.setLineWidth(0.1); xs.slice(1).forEach(x=>doc.line(x,rowY,x,rowY+mainH));
+
     const cY=rowY+PAD+LH*0.8;
-    doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK); doc.text(it.numero,xs[0]+cols[0].w/2,cY,{align:'center'});
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text(it.numero,xs[0]+cols[0].w/2,cY,{align:'center'});
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(DARK);
     doc.text(dL,xs[1]+1,cY);
-    doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK); doc.text(String(it.quantidade||'—'),xs[2]+cols[2].w/2,cY,{align:'center'});
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text(String(it.quantidade||'—'),xs[2]+cols[2].w/2,cY,{align:'center'});
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(DARK);
     doc.text(String(it.um||'—'),xs[3]+1,cY);
     doc.text(String(it.tipo||'—'),xs[4]+1,cY);
-    doc.text(fL,xs[5]+1,cY);
-    doc.text(String(it.classe_inspecao||'—'),xs[6]+1,cY);
-    doc.text(aL,xs[7]+1,cY);
-    doc.text(oL,xs[8]+1,cY);
-    if(dtL.length>0){doc.setFontSize(6.5);doc.setFont('helvetica','italic');setC(GRAY);doc.text(dtL,xs[1]+2,rowY+mainH+3.5);}
-    setD(LGRAY); doc.setLineWidth(0.2); doc.line(ML,rowY+rowH,ML+CW,rowY+rowH);
-    y=rowY+rowH+0.5;
+    doc.text(oL,xs[5]+1,cY);
+    doc.text(fL,xs[6]+1,cY);
+    doc.text(String(it.classe_inspecao||'—'),xs[7]+1,cY);
+    doc.text(aL,xs[8]+1,cY);
+    // Linha separadora da linha principal
+    setD(LGRAY); doc.setLineWidth(0.1); doc.line(ML,rowY+mainH,ML+CW,rowY+mainH);
+
+    // Bloco de descrição científica
+    if(hasDesc){
+      const dcY=rowY+mainH;
+      // Calcula separando label do texto para wrap correto
+      doc.setFontSize(7); doc.setFont('helvetica','normal');
+      const LABEL='D.Científica:  ';
+      const labelW=doc.getTextWidth(LABEL);
+      const textW=CW-6-labelW;
+      const GAP = doc.getTextWidth('  ');
+      // Quebra só o texto descritivo (sem o label) pela largura restante
+      const textLines=doc.splitTextToSize(it.descricao_cientifica, textW);
+      // Altura total: 1ª linha tem label+texto, demais só texto indentado
+      const lineH=3.8;
+      const totalLines=textLines.length;
+      const dcHcalc=PAD+totalLines*lineH+PAD;
+      // Fundo
+      setF2(DESC_BG); setD(LGRAY); doc.setLineWidth(0.1);
+      doc.rect(ML,dcY,CW,dcHcalc,'F');
+      setF2(RED); doc.rect(ML,dcY,1.5,dcHcalc,'F');
+      // Desenha label em bold cinza na primeira linha
+      const baseY=dcY+PAD+lineH*0.85;
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); setC(GRAY);
+      doc.text(LABEL, ML+3, baseY);
+      // Desenha primeira linha do texto ao lado do label
+      doc.setFont('helvetica','normal'); setC(DARK);
+      doc.text(textLines[0], ML+3+labelW, baseY);
+      // Linhas seguintes indentadas no mesmo nível do texto (após o label)
+      for(let li=1;li<textLines.length;li++){
+        doc.text(textLines[li], ML+3+labelW+GAP, baseY+li*lineH);
+      }
+      // Separador inferior
+      setD(LGRAY); doc.setLineWidth(0.2); doc.line(ML,dcY+dcHcalc,ML+CW,dcY+dcHcalc);
+      // Ajusta totalH retrospectivamente para y final
+      y=rowY+mainH+dcHcalc+0.5;
+    } else {
+      y=rowY+mainH+0.5;
+    }
   });
+
   y+=4;
   if(data.obs_gerais){const f=mF('',data.obs_gerais,ML+4,CW-8);drawCard('Observações Gerais',[mRow([f])],f.h);}
   {const f1=mF('Revisão',data.revisao||'—',ML+4,30),f2=mF('Data de Emissão',fmtDate(data.data_emissao),ML+38,50),f3=mF('Histórico',data.historico_alteracoes||'—',ML+92,CW-96);
   drawCard('Histórico de Alterações',[mRow([f1,f2,f3])],Math.max(f1.h,f2.h,f3.h));}
+
   const tot=doc.internal.getNumberOfPages();
   for(let i=1;i<=tot;i++){doc.setPage(i);footerLine();}
   doc.save('OF-'+(data.codigo_documento||'OF').replace(/[^a-zA-Z0-9-]/g,'_')+'.pdf');
