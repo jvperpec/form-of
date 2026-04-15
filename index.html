@@ -638,7 +638,7 @@ function renderCard(item) {
     +'</div></div>'
     +'<div class="item-body" id="ib_'+item.id+'">'
     +'<div class="g2"><div class="field"><label>Tipo <span class="req">*</span></label><div class="pill-group">'+tipoPills+'</div></div>'
-    +'<div class="field"><label>Tipo de Faturamento <span class="req">*</span></label><select onchange="setF('+item.id+',\'fat\',this.value)">'+fatOpts+'</select></div></div>'
+    +'<div class="field"><label>Tipo de Saída <span class="req">*</span></label><select onchange="setF('+item.id+',\'fat\',this.value)">'+fatOpts+'</select></div></div>'
     +'<div class="g2" style="margin-bottom:0"><div class="field"><label>Pedido Omie <span class="req">*</span></label>'
     +'<input type="text" value="'+esc(d.omie||'')+'" placeholder="Nº Omie..." oninput="setF('+item.id+',\'omie\',this.value)"></div></div>'
     +'<div class="field"><label>Tipo de Ganho <span class="req">*</span></label><div class="pill-group">'+gainPills+'</div></div>'
