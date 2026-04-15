@@ -647,421 +647,254 @@ function gerarPDF() {
   if(err){showToast(err,'error');return;}
 
   const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
-  // Helper: format date string YYYY-MM-DD → DD-MM-AAAA
-  function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T12:00:00'); return d.toLocaleDateString('pt-BR').replace(/\//g,'-'); }
   const W=210, H=297, ML=14, MR=14, CW=W-ML-MR;
-  // Paleta
   const RED=[192,57,43], DARK=[26,18,16], GRAY=[106,103,96], LGRAY=[224,219,213], WHITE=[255,255,255];
-  // Fonte base
-  doc.setFont('helvetica','normal');
+  const BG_CARD=[248,247,245], BG_PAI=[240,237,232];
+  const LH=4.4, PAD=4;
+
+  function setC(r){doc.setTextColor(r[0],r[1],r[2]);}
+  function setF(r){doc.setFillColor(r[0],r[1],r[2]);}
+  function setD(r){doc.setDrawColor(r[0],r[1],r[2]);}
+
+  function fmtDate(s){
+    if(!s) return '—';
+    const p=s.split('-');
+    if(p.length!==3) return s;
+    return p[2]+'-'+p[1]+'-'+p[0];
+  }
+
   let y=0;
 
-  // ── Helpers ────────────────────────────────────────────────────
-  function chk(n){if(y+n>H-12){newPage();}}
-
-  function newPage(){
-    // rodapé da página atual
-    footerLine();
-    doc.addPage();
-    y=0;
-    pageHeader();
-    y+=4;
-  }
-
-  function setC(rgb){doc.setTextColor(rgb[0],rgb[1],rgb[2]);}
-  function setF2(rgb){doc.setFillColor(rgb[0],rgb[1],rgb[2]);}
-  function setDC(rgb){doc.setDrawColor(rgb[0],rgb[1],rgb[2]);}
-
-  // ── CABEÇALHO (replica o do PDF modelo) ───────────────────────
-  function pageHeader(){
-    // Linha vermelha superior
-    setF2(RED); doc.rect(0,0,W,1,'F');
-
-    // Logo placeholder — triângulo PERPEC estilizado
-    // Desenhar o triângulo vermelho do logo
-    setF2(RED);
-    doc.triangle(ML, 18, ML+7, 6, ML+14, 18, 'F');
-    // Texto PERPEC
-    doc.setFontSize(9); doc.setFont('helvetica','bold'); setC(DARK);
-    doc.text('PERPEC', ML+16, 12);
-    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text('OILFIELD SUPPLY', ML+16, 16.5);
-
-    // Título direita
-    doc.setFontSize(16); doc.setFont('helvetica','bold'); setC(DARK);
-    doc.text('Ordem de Fornecimento', W-MR, 11, {align:'right'});
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text('FP-COM-0001 — Rev. '+( data.revisao||'0'), W-MR, 17, {align:'right'});
-
-    // Linha separadora cinza
-    setDC(LGRAY); doc.setLineWidth(0.3);
-    doc.line(ML, 22, W-MR, 22);
-
-    y = 28;
-
-    // Código + data: "OF" em cinza (mesmo padrão do label), código em negrito escuro
-    doc.setFontSize(10); doc.setFont('helvetica','bold');
-    setC(GRAY); // "OF" sem destaque — mesma cor cinza do texto secundário
-    doc.text('OF', ML, y);
-    const _ofW = doc.getTextWidth('OF ');
-    setC(DARK);
-    doc.text(( data.codigo_documento||'—'), ML + _ofW, y);
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
-    const emissao = data.data_emissao ? fmtDate(data.data_emissao) : '—';
-    doc.text(emissao, W-MR, y, {align:'right'});
-    y += 8;
-  }
-
-  // ── RODAPÉ ────────────────────────────────────────────────────
   function footerLine(){
-    const fy = H-8;
-    setDC(LGRAY); doc.setLineWidth(0.3); doc.line(ML, fy-2, W-MR, fy-2);
+    const fy=H-8;
+    setD(LGRAY); doc.setLineWidth(0.3); doc.line(ML,fy-2,W-MR,fy-2);
     doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setC(GRAY);
-    const emissao = data.data_emissao ? fmtDate(data.data_emissao) : '—';
-    doc.text('Gerado em '+emissao+' — PERPEC Oilfield Supply', ML, fy+1);
-    doc.text('OF '+(data.codigo_documento||'—'), W-MR, fy+1, {align:'right'});
+    doc.text('Gerado em '+fmtDate(data.data_emissao)+' — PERPEC Oilfield Supply',ML,fy+1);
+    doc.text('OF '+(data.codigo_documento||'—'),W-MR,fy+1,{align:'right'});
   }
 
-  // ── CAIXA DE SEÇÃO (card cinza claro com label e conteúdo) ─────
-  function sectionBox(labelTop, contentFn) {
-    // medir altura antes de desenhar
-    const startY = y;
-    // label pequeno cinza
-    chk(10);
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text(labelTop.toUpperCase(), ML+3, y+4.5);
-    y += 2;
-
-    const boxStartY = y;
-    contentFn(); // preenche conteúdo, avança y
-    const boxH = y - boxStartY + 4;
-
-    // Desenhar a caixa por cima (rect com borda)
-    setDC(LGRAY); doc.setLineWidth(0.3); setF2([248,247,245]);
-    doc.roundedRect(ML, boxStartY, CW, boxH, 2, 2, 'FD');
-    // redesenhar label (por cima do rect)
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text(labelTop.toUpperCase(), ML+3, boxStartY+4.5);
-
-    y = boxStartY + boxH + 4;
-  }
-
-  // ── CAMPO label + valor dentro de caixas ──────────────────────
-  function field(label, value, x, w, baseY) {
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text(label, x, baseY);
+  function pageHeader(){
+    setF(RED); doc.rect(0,0,W,1,'F');
+    setF(RED); doc.triangle(ML,18,ML+7,6,ML+14,18,'F');
     doc.setFontSize(9); doc.setFont('helvetica','bold'); setC(DARK);
-    const ls = doc.splitTextToSize(String(value||'—'), w-2);
-    doc.text(ls, x, baseY+4.5);
-    return ls.length * 4.8 + 5;
+    doc.text('PERPEC',ML+16,12);
+    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('OILFIELD SUPPLY',ML+16,16.5);
+    doc.setFontSize(16); doc.setFont('helvetica','bold'); setC(DARK);
+    doc.text('Ordem de Fornecimento',W-MR,11,{align:'right'});
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text('FP-COM-0001 — Rev. '+(data.revisao||'0'),W-MR,17,{align:'right'});
+    setD(LGRAY); doc.setLineWidth(0.3); doc.line(ML,22,W-MR,22);
+    y=28;
+    doc.setFontSize(10); doc.setFont('helvetica','bold');
+    setC(GRAY); doc.text('OF',ML,y);
+    const ofW=doc.getTextWidth('OF ');
+    setC(DARK); doc.text(data.codigo_documento||'—',ML+ofW,y);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text(fmtDate(data.data_emissao),W-MR,y,{align:'right'});
+    y+=8;
   }
 
-  // ── LINHA DE SEPARAÇÃO interna ────────────────────────────────
-  function innerLine() {
-    setDC(LGRAY); doc.setLineWidth(0.2);
-    doc.line(ML+2, y, ML+CW-2, y);
-    y+=3;
+  function newPage(){footerLine();doc.addPage();y=0;pageHeader();y+=4;}
+  function chk(n){if(y+n>H-14){newPage();}}
+
+  // Mede um campo: retorna objeto com linhas pré-calculadas e altura
+  function mField(label,value,x,w){
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    const lines=doc.splitTextToSize(String(value||'—'),w-2);
+    const h=lines.length*4.8+5;
+    return {label,x,w,lines,h};
   }
 
-  // ── INÍCIO DO DOCUMENTO ───────────────────────────────────────
+  // Agrupa campos numa row e calcula a altura máxima
+  function mRow(fields){
+    const h=Math.max(...fields.map(f=>f.h));
+    return {cols:fields,h};
+  }
+
+  // Desenha um card: fundo primeiro, depois texto (nunca redesenha)
+  function drawCard(label,rows,totalH){
+    chk(totalH+14);
+    const bY=y;
+    const sepH=(rows.length-1)*3;
+    const boxH=10+totalH+sepH+4;
+    // 1. Fundo + borda
+    setF(BG_CARD); setD(LGRAY); doc.setLineWidth(0.3);
+    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
+    // 2. Label
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+    doc.text(label.toUpperCase(),ML+3,bY+5);
+    // 3. Conteúdo
+    let cy=bY+10;
+    rows.forEach((row,ri)=>{
+      if(ri>0){
+        setD(LGRAY); doc.setLineWidth(0.2);
+        doc.line(ML+2,cy,ML+CW-2,cy);
+        cy+=3;
+      }
+      row.cols.forEach(col=>{
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
+        if(col.label) doc.text(col.label,col.x,cy);
+        doc.setFontSize(9); doc.setFont('helvetica','bold'); setC(DARK);
+        doc.text(col.lines,col.x,cy+4.5);
+      });
+      cy+=row.h;
+    });
+    y=bY+boxH+4;
+  }
+
   pageHeader();
 
-  // == BLOCO: IDENTIFICAÇÃO DA VENDA ============================
-  chk(40);
-  { // caixa venda
-    const bY = y;
-    setDC(LGRAY); doc.setLineWidth(0.3); setF2([248,247,245]);
-    // altura provisória
-    doc.roundedRect(ML, bY, CW, 8, 2, 2, 'FD'); // placeholder
-
-    // label topo
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text('IDENTIFICAÇÃO DA VENDA', ML+3, bY+5);
-    y = bY + 10;
-
-    // Cliente (linha completa)
-    const h1 = field('Cliente', data.cliente, ML+4, CW-8, y);
-    y += h1;
-    innerLine();
-
-    // ICMS + Consumidor Final
-    const h2a = field('Contribuinte ICMS', data.contribuinte_icms, ML+4, CW/2-6, y);
-    const h2b = field('Consumidor Final', data.consumidor_final, ML+CW/2+2, CW/2-6, y);
-    y += Math.max(h2a,h2b);
-    innerLine();
-
-    // Contrato + Pedido Omie
-    const h3a = field('Contrato / Pedido (cliente)', data.contrato_cliente||'—', ML+4, CW/2-6, y);
-    const h3b = field('Pedido Omie', data.pedido_omie, ML+CW/2+2, CW/2-6, y);
-    y += Math.max(h3a,h3b);
-    innerLine();
-
-    // Proposta + Filial
-    const h4a = field('Proposta', data.proposta||'—', ML+4, CW/2-6, y);
-    const h4b = field('Filial', data.filial||'—', ML+CW/2+2, CW/2-6, y);
-    y += Math.max(h4a,h4b);
-
-    if(data.obs_venda){
-      innerLine();
-      const hObs = field('Obs. Venda', data.obs_venda, ML+4, CW-8, y);
-      y += hObs;
-    }
-
-    const boxH = y - bY + 4;
-    setDC(LGRAY); doc.setLineWidth(0.3); setF2([248,247,245]);
-    doc.roundedRect(ML, bY, CW, boxH, 2, 2, 'FD');
-    // redraw label e campos (rect apaga os textos — precisa redesenhar)
-    doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
-    doc.text('IDENTIFICAÇÃO DA VENDA', ML+3, bY+5);
-    y = bY + 10;
-    const rh1 = field('Cliente', data.cliente, ML+4, CW-8, y); y+=rh1;
-    setDC(LGRAY);doc.setLineWidth(0.2);doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    const rh2a=field('Contribuinte ICMS',data.contribuinte_icms,ML+4,CW/2-6,y);
-    const rh2b=field('Consumidor Final',data.consumidor_final,ML+CW/2+2,CW/2-6,y);
-    y+=Math.max(rh2a,rh2b);
-    doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    const rh3a=field('Contrato / Pedido (cliente)',data.contrato_cliente||'—',ML+4,CW/2-6,y);
-    const rh3b=field('Pedido Omie',data.pedido_omie,ML+CW/2+2,CW/2-6,y);
-    y+=Math.max(rh3a,rh3b);
-    doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    const rh4a=field('Proposta',data.proposta||'—',ML+4,CW/2-6,y);
-    const rh4b=field('Filial',data.filial||'—',ML+CW/2+2,CW/2-6,y);
-    y+=Math.max(rh4a,rh4b);
-    if(data.obs_venda){doc.line(ML+2,y,ML+CW-2,y);y+=3;y+=field('Obs. Venda',data.obs_venda,ML+4,CW-8,y);}
-    y += 6;
-  }
-
-  // == BLOCO: IDENTIFICAÇÃO LOGÍSTICA ===========================
-  chk(40);
+  // ── VENDA ─────────────────────────────────────────────────────
   {
-    const bY=y;
-    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
-    doc.text('IDENTIFICAÇÃO LOGÍSTICA',ML+3,bY+5);
-    y=bY+10;
-    const h1a=field('Data de Entrega',data.prazo_entrega? fmtDate(data.prazo_entrega) :'—',ML+4,CW/2-6,y);
-    const h1b=field('Tipo de Frete',data.tipo_frete||'—',ML+CW/2+2,CW/2-6,y);
-    y+=Math.max(h1a,h1b);
-    setDC(LGRAY);doc.setLineWidth(0.2);doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    const h2a=field('UF',data.uf_entrega||'—',ML+4,28,y);
-    const h2b=field('Cidade',data.cidade_entrega||'—',ML+36,CW/2-20,y);
-    y+=Math.max(h2a,h2b);
-    doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    const h3=field('Endereço',data.endereco_entrega||'—',ML+4,CW-8,y);
-    y+=h3;
-    if(data.obs_logistica){doc.line(ML+2,y,ML+CW-2,y);y+=3;y+=field('Obs. Logística',data.obs_logistica,ML+4,CW-8,y);}
-    const boxH=y-bY+4;
-    setDC(LGRAY);doc.setLineWidth(0.3);setF2([248,247,245]);
-    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
-    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
-    doc.text('IDENTIFICAÇÃO LOGÍSTICA',ML+3,bY+5);
-    y=bY+10;
-    const rh1a=field('Data de Entrega',data.prazo_entrega? fmtDate(data.prazo_entrega) :'—',ML+4,CW/2-6,y);
-    const rh1b=field('Tipo de Frete',data.tipo_frete||'—',ML+CW/2+2,CW/2-6,y);
-    y+=Math.max(rh1a,rh1b);
-    setDC(LGRAY);doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    const rh2a=field('UF',data.uf_entrega||'—',ML+4,28,y);
-    const rh2b=field('Cidade',data.cidade_entrega||'—',ML+36,CW/2-20,y);
-    y+=Math.max(rh2a,rh2b);
-    doc.line(ML+2,y,ML+CW-2,y);y+=3;
-    y+=field('Endereço',data.endereco_entrega||'—',ML+4,CW-8,y);
-    if(data.obs_logistica){doc.line(ML+2,y,ML+CW-2,y);y+=3;y+=field('Obs. Logística',data.obs_logistica,ML+4,CW-8,y);}
-    y+=6;
+    const f1=mField('Cliente',data.cliente,ML+4,CW-8);
+    const f2a=mField('Contribuinte ICMS',data.contribuinte_icms,ML+4,CW/2-6);
+    const f2b=mField('Consumidor Final',data.consumidor_final,ML+CW/2+2,CW/2-6);
+    const f3a=mField('Contrato / Pedido (cliente)',data.contrato_cliente||'—',ML+4,CW/2-6);
+    const f3b=mField('Pedido Omie',data.pedido_omie,ML+CW/2+2,CW/2-6);
+    const f4a=mField('Proposta',data.proposta||'—',ML+4,CW/2-6);
+    const f4b=mField('Filial',data.filial||'—',ML+CW/2+2,CW/2-6);
+    const rows=[mRow([f1]),mRow([f2a,f2b]),mRow([f3a,f3b]),mRow([f4a,f4b])];
+    if(data.obs_venda) rows.push(mRow([mField('Obs. Venda',data.obs_venda,ML+4,CW-8)]));
+    const totalH=rows.reduce((a,r)=>a+r.h,0);
+    drawCard('Identificação da Venda',rows,totalH);
   }
 
-  // == TABELA DE ITENS ==========================================
+  // ── LOGÍSTICA ────────────────────────────────────────────────
+  {
+    const f1a=mField('Data de Entrega',fmtDate(data.prazo_entrega),ML+4,CW/2-6);
+    const f1b=mField('Tipo de Frete',data.tipo_frete||'—',ML+CW/2+2,CW/2-6);
+    const f2a=mField('UF',data.uf_entrega||'—',ML+4,28);
+    const f2b=mField('Cidade',data.cidade_entrega||'—',ML+36,CW/2-20);
+    const f3=mField('Endereço',data.endereco_entrega||'—',ML+4,CW-8);
+    const rows=[mRow([f1a,f1b]),mRow([f2a,f2b]),mRow([f3])];
+    if(data.obs_logistica) rows.push(mRow([mField('Obs. Logística',data.obs_logistica,ML+4,CW-8)]));
+    const totalH=rows.reduce((a,r)=>a+r.h,0);
+    drawCard('Identificação Logística',rows,totalH);
+  }
+
+  // ── TABELA DE ITENS ──────────────────────────────────────────
   chk(20);
-  // Título da seção
-  doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
+  doc.setFontSize(7); doc.setFont('helvetica','normal'); setC(GRAY);
   doc.text('IDENTIFICAÇÃO DOS ITENS',ML+3,y+5);
   y+=10;
 
-  // Colunas: # | Código+Desc | Qtd | UM | Tipo | Fat. | Insp. | Acab. | Obs.
-  // Larguras (CW = 182mm)
   const cols=[
-    {label:'#',       w:8},
-    {label:'Código + Descrição', w:56},
-    {label:'Qtd',     w:12},
-    {label:'UM',      w:11},
-    {label:'Tipo',    w:14},
-    {label:'Faturamento', w:24},
-    {label:'Inspeção',w:18},
-    {label:'Acabamento',w:20},
-    {label:'Obs.',    w:CW-8-56-12-11-14-24-18-20}
+    {label:'#',w:8},{label:'Código + Descrição',w:55},{label:'Qtd',w:12},
+    {label:'UM',w:11},{label:'Tipo',w:14},{label:'Faturamento',w:24},
+    {label:'Inspeção',w:18},{label:'Acabamento',w:21},
+    {label:'Obs.',w:CW-8-55-12-11-14-24-18-21}
   ];
-  // xs (posição x de cada coluna)
   let xs=[ML];
   for(let i=0;i<cols.length-1;i++) xs.push(xs[i]+cols[i].w);
 
-  function tableHeader(){
+  function tblHeader(){
     chk(8);
-    setF2([240,237,232]);setDC(LGRAY);doc.setLineWidth(0.2);
+    setF([240,237,232]); setD(LGRAY); doc.setLineWidth(0.2);
     doc.rect(ML,y,CW,6,'FD');
-    doc.setFontSize(6.5);doc.setFont('helvetica','bold');setC(GRAY);
-    cols.forEach((c,i)=>{ doc.text(c.label, xs[i]+1, y+4); });
+    doc.setFontSize(6.5); doc.setFont('helvetica','bold'); setC(GRAY);
+    cols.forEach((c,i)=>doc.text(c.label,xs[i]+1,y+4));
     y+=6;
-    // linha inferior do header
-    setDC(LGRAY);doc.setLineWidth(0.4);
-    doc.line(ML,y,ML+CW,y);
+    setD(LGRAY); doc.setLineWidth(0.4); doc.line(ML,y,ML+CW,y);
     y+=1;
   }
+  tblHeader();
 
-  tableHeader();
-
-  data.itens.forEach((it,idx)=>{
-    // Pré-calcular todas as linhas de texto para medir altura corretamente
-    const LH = 4.4; // line height mm
-    const PAD_TOP = 4, PAD_BOT = 4;
-
+  data.itens.forEach(it=>{
+    // ── Calcular TUDO antes de desenhar qualquer coisa ──────────
     doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-    const descLines = doc.splitTextToSize(it.item_cod_desc||'—', cols[1].w-2);
-    const obsLines  = doc.splitTextToSize(it.obs||'—', cols[8].w-2);
-    const fatLines  = doc.splitTextToSize(it.faturamento||'—', cols[5].w-2);
-    const acabLines = doc.splitTextToSize(String(it.acab||'—'), cols[7].w-2);
+    const descLines=doc.splitTextToSize(it.item_cod_desc||'—',cols[1].w-2);
+    const obsLines =doc.splitTextToSize(it.obs||'—',cols[8].w-2);
+    const fatLines =doc.splitTextToSize(it.faturamento||'—',cols[5].w-2);
+    const acabLines=doc.splitTextToSize(String(it.acab||'—'),cols[7].w-2);
 
-    // Desc. técnica: medir linhas e reservar espaço
-    doc.setFontSize(6.5);
-    const dtLines = it.desc_tecnica
-      ? doc.splitTextToSize('\u21b3 '+it.desc_tecnica, cols[1].w-2)
+    doc.setFontSize(6.5); doc.setFont('helvetica','italic');
+    const dtLines=it.desc_tecnica
+      ? doc.splitTextToSize('\u21b3 '+it.desc_tecnica,cols[1].w-2)
       : [];
 
-    // Altura total da linha = maior das colunas + espaço para desc técnica
-    const mainLines = Math.max(descLines.length, obsLines.length, fatLines.length, acabLines.length, 1);
-    const mainH  = PAD_TOP + mainLines * LH + PAD_BOT;
-    const dtH    = dtLines.length > 0 ? dtLines.length * 3.8 + 2 : 0;
-    const rowH   = mainH + dtH;
+    const mainLines=Math.max(descLines.length,obsLines.length,fatLines.length,acabLines.length,1);
+    const mainH=PAD+mainLines*LH+PAD;
+    const dtBlockH=dtLines.length>0 ? dtLines.length*3.8+PAD : 0;
+    const rowH=mainH+dtBlockH;
 
-    chk(rowH + 2);
-    const rowY = y;
+    chk(rowH+2);
+    const rowY=y;
 
-    // Fundo: item pai = cinza suave, subitem = branco puro
-    if(it.hierarquia === 'pai') {
-      setF2([240,237,232]); // cinza-bege para item pai
-    } else {
-      setF2(WHITE);         // branco puro para subitem
+    // ── 1. Fundo ────────────────────────────────────────────────
+    setF(it.hierarquia==='pai' ? BG_PAI : WHITE);
+    setD(LGRAY); doc.setLineWidth(0.1);
+    doc.rect(ML,rowY,CW,rowH,'F');
+
+    // Marca lateral vermelha para subitem
+    if(it.hierarquia==='subitem'){setF(RED);doc.rect(ML,rowY,1.5,rowH,'F');}
+
+    // ── 2. Divisória entre bloco principal e desc. técnica ──────
+    if(dtLines.length>0){
+      setD([200,195,190]); doc.setLineWidth(0.15);
+      doc.line(xs[1],rowY+mainH,xs[1]+cols[1].w,rowY+mainH);
     }
-    setDC(LGRAY); doc.setLineWidth(0.1);
-    doc.rect(ML, rowY, CW, rowH, 'F');
 
-    // Marca vermelha lateral apenas para subitem
-    if(it.hierarquia === 'subitem') {
-      setF2(RED); doc.rect(ML, rowY, 1.5, rowH, 'F');
-    }
+    // ── 3. Linhas verticais ─────────────────────────────────────
+    setD(LGRAY); doc.setLineWidth(0.1);
+    xs.slice(1).forEach(x=>doc.line(x,rowY,x,rowY+rowH));
 
-    // Linhas verticais entre colunas
-    setDC(LGRAY); doc.setLineWidth(0.1);
-    xs.slice(1).forEach(x => doc.line(x, rowY, x, rowY + rowH));
+    // ── 4. Texto do bloco principal ─────────────────────────────
+    const cY=rowY+PAD+(LH*0.8);
 
-    // Baseline do texto principal
-    const cY = rowY + PAD_TOP + (LH * 0.8);
-
-    // # — número
     doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK);
-    doc.text(it.numero, xs[0]+cols[0].w/2, cY, {align:'center'});
+    doc.text(it.numero,xs[0]+cols[0].w/2,cY,{align:'center'});
 
-    // Código + Desc (parte principal, sem desc técnica)
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(DARK);
-    doc.text(descLines, xs[1]+1, cY);
+    doc.text(descLines,xs[1]+1,cY);
 
-    // Qtd
     doc.setFontSize(8); doc.setFont('helvetica','bold'); setC(DARK);
-    doc.text(String(it.quantidade||'—'), xs[2]+cols[2].w/2, cY, {align:'center'});
+    doc.text(String(it.quantidade||'—'),xs[2]+cols[2].w/2,cY,{align:'center'});
 
-    // UM
     doc.setFontSize(7.5); doc.setFont('helvetica','normal'); setC(DARK);
-    doc.text(String(it.um||'—'), xs[3]+1, cY);
+    doc.text(String(it.um||'—'),xs[3]+1,cY);
+    doc.text(String(it.tipo||'—'),xs[4]+1,cY);
+    doc.text(fatLines,xs[5]+1,cY);
+    doc.text(String(it.classe_inspecao||'—'),xs[6]+1,cY);
+    doc.text(acabLines,xs[7]+1,cY);
+    doc.text(obsLines,xs[8]+1,cY);
 
-    // Tipo
-    doc.text(String(it.tipo||'—'), xs[4]+1, cY);
-
-    // Faturamento
-    doc.text(fatLines, xs[5]+1, cY);
-
-    // Inspeção
-    doc.text(String(it.classe_inspecao||'—'), xs[6]+1, cY);
-
-    // Acabamento
-    doc.text(acabLines, xs[7]+1, cY);
-
-    // Obs.
-    doc.text(obsLines, xs[8]+1, cY);
-
-    // Desc. técnica: abaixo do bloco principal, dentro da mesma linha
-    if(dtLines.length > 0) {
-      const dtStartY = rowY + mainH; // logo abaixo do bloco principal
-      // linha divisória interna sutil
-      setDC([200,195,190]); doc.setLineWidth(0.15);
-      doc.line(xs[1], dtStartY, xs[1]+cols[1].w, dtStartY);
+    // ── 5. Desc. técnica no espaço reservado ────────────────────
+    if(dtLines.length>0){
       doc.setFontSize(6.5); doc.setFont('helvetica','italic'); setC(GRAY);
-      doc.text(dtLines, xs[1]+1, dtStartY + 3.2);
+      doc.text(dtLines,xs[1]+1,rowY+mainH+3);
     }
 
-    // Linha inferior da row
-    setDC(LGRAY); doc.setLineWidth(0.2);
-    doc.line(ML, rowY+rowH, ML+CW, rowY+rowH);
-
-    y = rowY + rowH + 0.5;
+    // ── 6. Linha inferior ───────────────────────────────────────
+    setD(LGRAY); doc.setLineWidth(0.2);
+    doc.line(ML,rowY+rowH,ML+CW,rowY+rowH);
+    y=rowY+rowH+0.5;
   });
 
   y+=4;
 
-  // Borda externa da tabela
-  setDC(LGRAY);doc.setLineWidth(0.4);
-  // (já foi desenhado linha por linha)
-
-  // == OBSERVAÇÕES GERAIS =======================================
+  // ── OBS. GERAIS ──────────────────────────────────────────────
   if(data.obs_gerais){
-    chk(20);
-    const bY=y;
-    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
-    doc.text('OBSERVAÇÕES GERAIS',ML+3,bY+5);
-    y=bY+10;
-    const hOg=field('',data.obs_gerais,ML+4,CW-8,y);
-    y+=hOg;
-    const boxH=y-bY+4;
-    setDC(LGRAY);doc.setLineWidth(0.3);setF2([248,247,245]);
-    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
-    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
-    doc.text('OBSERVAÇÕES GERAIS',ML+3,bY+5);
-    y=bY+10;
-    y+=field('',data.obs_gerais,ML+4,CW-8,y);
-    y+=6;
+    const f=mField('',data.obs_gerais,ML+4,CW-8);
+    drawCard('Observações Gerais',[mRow([f])],f.h);
   }
 
-  // == HISTÓRICO ================================================
-  chk(20);
+  // ── HISTÓRICO ────────────────────────────────────────────────
   {
-    const bY=y;
-    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
-    doc.text('HISTÓRICO DE ALTERAÇÕES',ML+3,bY+5);
-    y=bY+10;
-    const h1a=field('Revisão',data.revisao||'—',ML+4,30,y);
-    const emissao=data.data_emissao?fmtDate(data.data_emissao):'—';
-    const h1b=field('Data de Emissão',emissao,ML+38,50,y);
-    const h1c=field('Histórico',data.historico_alteracoes||'—',ML+92,CW-96,y);
-    y+=Math.max(h1a,h1b,h1c);
-    const boxH=y-bY+4;
-    setDC(LGRAY);doc.setLineWidth(0.3);setF2([248,247,245]);
-    doc.roundedRect(ML,bY,CW,boxH,2,2,'FD');
-    doc.setFontSize(7);doc.setFont('helvetica','normal');setC(GRAY);
-    doc.text('HISTÓRICO DE ALTERAÇÕES',ML+3,bY+5);
-    y=bY+10;
-    const rh1a=field('Revisão',data.revisao||'—',ML+4,30,y);
-    const emissao2=data.data_emissao?fmtDate(data.data_emissao):'—';
-    const rh1b=field('Data de Emissão',emissao2,ML+38,50,y);
-    const rh1c=field('Histórico',data.historico_alteracoes||'—',ML+92,CW-96,y);
-    y+=Math.max(rh1a,rh1b,rh1c);
-    y+=6;
+    const f1=mField('Revisão',data.revisao||'—',ML+4,30);
+    const f2=mField('Data de Emissão',fmtDate(data.data_emissao),ML+38,50);
+    const f3=mField('Histórico',data.historico_alteracoes||'—',ML+92,CW-96);
+    const totalH=Math.max(f1.h,f2.h,f3.h);
+    drawCard('Histórico de Alterações',[mRow([f1,f2,f3])],totalH);
   }
 
-  // Rodapé de todas as páginas
+  // ── RODAPÉ ───────────────────────────────────────────────────
   const tot=doc.internal.getNumberOfPages();
-  for(let i=1;i<=tot;i++){
-    doc.setPage(i);
-    footerLine();
-  }
+  for(let i=1;i<=tot;i++){doc.setPage(i);footerLine();}
 
   doc.save('OF-'+(data.codigo_documento||'OF').replace(/[^a-zA-Z0-9-]/g,'_')+'.pdf');
 }
+
 
 async function gerarDOCX() {
   const data=collect(), err=validate(data);
